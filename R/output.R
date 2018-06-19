@@ -45,3 +45,47 @@ print.genopheno <- function(gp, what = 'all') {
 #
 #  }
 }
+
+
+#' Retrieve information about the phenotypes of the genetic system
+#'
+#' @param genopheno A genopheno object containing all information about a genetic system.
+#' @param equivalent Argument determining which genotypes are to be treated as equivalent.
+#' Possible options are "phase" (genotypes that differ only by phase are equivalent,
+#' i.e. the order of alleles within a locus does not matter),
+#' "origin" (phase is important but not the origin of alleles),
+#' and "none" (no two genotypes are equivalent).
+#'
+#' @return A dataframe in which rows represent genotypes (given by row names),
+#'         and columns represent traits.
+#' @export
+#'
+#' @examples
+getPhenotypes <- function(genopheno, equivalent = "phase") {
+  if (is.null(genopheno$pheno)) {
+    print("No phenotypes specified yet.")
+  } else {
+    if (equivalent == 'none') {
+      return(genopheno$pheno)
+    } else if ((equivalent == 'phase') | (equivalent == 'origin')) {
+      issueWarning <- FALSE
+      toShow <- rep(TRUE, nrow(genopheno$pheno))
+      names(toShow) <- rownames(genopheno$pheno)
+      for(i in 1:nrow(genopheno$pheno)) {
+        if (toShow[i]) {
+          equisList <- getEquivalents(convertGenoStringToList(rownames(genopheno$pheno)[i], genopheno),
+                                      genopheno, equivalent = equivalent) # list of genotypes that are equivalent to gt #i
+          equisString <- sapply(equisList, convertGenoListToString, genopheno = genopheno) # same in string format
+          for(j in 1:ncol(genopheno$pheno))
+            if (length(unique(genopheno$pheno[equisString,j])) > 1) issueWarning <- TRUE
+          equisString <- equisString[equisString!=rownames(genopheno$pheno)[i]]   # remove current gt from vector
+          toShow[equisString] <- FALSE
+        }
+      }
+      if (issueWarning) warning("Genotypes considered equivalent have been assigned different phenotypes.")
+      return(genopheno$pheno[toShow,,drop = FALSE])
+    } else {
+      stop("Unknown value for argument 'equivalent")
+    }
+  }
+}
