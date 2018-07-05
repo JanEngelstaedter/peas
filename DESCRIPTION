@@ -1,12 +1,18 @@
 Package: peasr
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: Predicting patterns of Mendelian inheritance
+Version: 0.0.0.9000
+Authors@R: person("Jan", "Engelstaedter", email = "j.engelstaedter@uq.edu.au",
+  role = c("aut", "cre"))
+Description: Functions for defining systems of Mendelian inheritance (defined broadly)
+    and making predictions about the distribution of offspring genotypes and phenotypes
+    in crosses. The package can handle arbitrary numbers of linkage groups, loci and alleles
+    per locus, as well as arbitrarily defined phenotypes for one or more traits. This means that
+    traits can be polygeneic and involve epistasis. 
+    Gene expression that is parent-of-origin specific (imprinting) or controled by other genes in cis
+    is also supported. 
+    The current version only supports autosomal linkage groups.
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Suggests: testthat
+VignetteBuilder: knitr

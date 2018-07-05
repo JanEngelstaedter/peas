@@ -20,6 +20,12 @@
 #' @export
 #'
 #' @examples
+#'
+#' MendelsPeas <- newGenopheno(nloci = 1, alleleNames = list(c('Y', 'y')))
+#' MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'Y_', 'yellow')
+#' MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'yy', 'green')
+#' getPhenotypes(MendelsPeas)
+#'
 newGenopheno <- function(nloci = 1, nalleles = rep(2, nloci), alleleNames = 'standard', rec = NULL, type = 'autosomal') {
   # initial checking if all arguments make sense and are consistent:
   checkGenophenoArguments(nloci, nalleles, alleleNames, rec, type)
@@ -32,19 +38,8 @@ newGenopheno <- function(nloci = 1, nalleles = rep(2, nloci), alleleNames = 'sta
 
 #' Add linkage group to genetic system
 #'
-#'
-#'
-#' @param nloci The number of loci. The default value is 1 but any (reasonable) number can be chosen.
-#' @param nalleles The number of alleles for each locus. This should be a vector of length \code{nloci} containing positive integer numbers.
-#' By default, all loci are set to be biallelic.
-#' @param alleleNames The names for the alleles at the different loci.
-#' The default value is 'standard', which automatically produces allele names 'a' and 'A' for the first locus, 'b' and 'B' for the second locus etc.
-#' For other allele names, \code{alleleNames} should be a list of nloci elements, each of which needs to be a vector containing the allele names.
-#' Allele names need to be strings (class \code{character}) and can contain letters, numbers, or symbols (except '~', '.' and '|').
-#' @param rec A vector of length \code{nloci-1} specifying recombination rates between the loci.
-#' @param type This parameter specifies the ploidy and inheritance for the loci.
-#' The default value is "autosomal", corresponding to diploid, autosomal inheritance.
-#' Other types that are currently supported include 'XY', 'ZW', and 'cytoplasmic'.
+#' @param genopheno genopheno object specifying the genetic setup.
+#' @inheritParams newGenopheno
 #'
 #' @return An object of class \code{genopheno} that stores all of the specifications provided about the genetic setup
 #' and that can then be extended to also include other linkage groups and corresponding phenotypes.
@@ -77,6 +72,12 @@ checkGenophenoArguments <- function(nloci, nalleles, alleleNames, rec, type) {
       stop(paste0("List of length nloci=", nloci, " expected for argument 'alleleNames'."))
     if (!identical(sapply(alleleNames, length), as.integer(nalleles)))
       stop("Number of alleles does not correspond to allele names.")
+    if (any(sapply(alleleNames, function(x) { length(unique(nchar(x)))>1 })))
+      stop("Allele names need to have the same number of characters for each locus.")
+    if (any(sapply(alleleNames, function(x) { unique(x) != x })))
+      stop("For each locus allele names need to be all different.")
+    if (any(sapply(alleleNames, function(x) { any(sapply(c('_','~','\\|','\\.',' '), grepl, x = x)) })))
+      stop("Invalid character in one of the allele names.")
   }
   if ((nloci == 1) & (!is.null(rec)))
     stop("No recombination rates can be set when there is only one locus.")
@@ -87,6 +88,13 @@ checkGenophenoArguments <- function(nloci, nalleles, alleleNames, rec, type) {
 }
 
 
+
+#' Produces a list of standard allele names for a locus
+#'
+#' @inheritParams newGenopheno
+#'
+#' @return A vector of character strings.
+#'
 getStandardAlleleNames <- function(nloci, nalleles) {
   alleleNames<-vector("list", nloci)
   if (max(nalleles)==2) {
@@ -95,6 +103,7 @@ getStandardAlleleNames <- function(nloci, nalleles) {
     for (locus in 1:nloci) alleleNames[[locus]]<-0:nalleles[locus]
   }
   else stop("Standard allele names not available when there are more than ten alleles at a locus.")
+  alleleNames
 }
 
 
@@ -114,7 +123,13 @@ getStandardAlleleNames <- function(nloci, nalleles) {
 #' @export
 #'
 #' @examples
-setPhenotypes <- function(genopheno, genotypes, traitName, traitValue, equivalent = "phase") {
+#'
+#' MendelsPeas <- newGenopheno(nloci = 1, alleleNames = list(c('Y', 'y')))
+#' MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'Y_', 'yellow')
+#' MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'yy', 'green')
+#' getPhenotypes(MendelsPeas)
+#'
+setPhenotypes <- function(genopheno, traitName, genotypes, traitValue, equivalent = "phase") {
   genotypes <- tidyGenoString(genotypes)
   if (is.null(genopheno$pheno)) {   # first time phenotypes are specified
     allGenoStrings <- getAllGenoStrings(genopheno)

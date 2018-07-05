@@ -1,0 +1,116 @@
+---
+title: "peas: a package to predict patterns of Mendelian inheritance"
+author: "Jan Engelstaedter"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{peasr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+The purpose of this package is predict offspring distributions in genetic crosses, 
+e.g. to assist in designing crossing schemes or to test whether a genetic system
+is in accord with observed distributions of offspring phenotypes in crosses.
+
+The general workflow is very simple. First, the genetic system is defined using
+the functions `newGenopheno`, `addLinkageGroup` and `setPhenotypes`. Second, the 
+function `predictCrosses` is used to predict the distribution of offspring genotypes
+and phenotypes in crosses. Below, these functions will be described in more detail, 
+but it may be useful to first go through a simple example. 
+Naturally, we will choose Mendel's peas.
+
+We will first consider a single locus with the dominant allele *Y* coding for 
+yellow pea colour, and the recessive allele *y* coding for green peas.
+The following code defines a system with a single locus and the two alleles
+and stores it in the object `MendelsPeas`:
+
+```{r}
+MendelsPeas <- newGenopheno(alleleNames = list(c('Y', 'y')))
+```
+
+We can take a look at this new object but calling it:
+```{r}
+MendelsPeas
+```
+This shows that `MendelsPeas` has the desired genetic properties, but we still
+need to define the genotypes. This is done by:
+
+```{r}
+# Define the genetic system:
+MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'Y_', 'yellow')
+MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'yy', 'green')
+```
+Here, the underscore character ("_") is a wildcard that stands for any of the possible alleles
+so that in this case, both *YY* homozygotes and *Yy* heterozygotes are assigned the 'yellow' trait.
+Calling again
+```{r}
+MendelsPeas
+```
+shows that now we do have some trait information attached to the `MendelsPeas` object.
+We can also look at the phenotypes in more detail by calling the function `getPhenotypes`:
+```{r}
+getPhenotypes(MendelsPeas)
+```
+This shows the trait for each of the possible genotypes.
+This concludes the definition of our genetic system and we can now predict crosses.
+Let us start with the cross between the two different homozygotes:
+```{r}
+predictCross(MendelsPeas, mom = 'YY', dad = 'yy')
+```
+
+```{r}
+predictCross(MendelsPeas, mom = 'Yy', dad = 'Yy')
+```
+
+
+## Vignette Info
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))

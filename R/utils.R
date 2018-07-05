@@ -8,8 +8,6 @@
 #'
 #' @return A tidy genotype string.
 #'
-#'
-#' @examples
 #' tidyGenoString("  aA ~bb|CC")
 tidyGenoString <- function(genoString) {
   tidyGeno <- gsub(" ", "", genoString)
@@ -80,7 +78,6 @@ convertGenoStringToList <- function(genoString, genopheno) {
 #'
 #' @return Genotype in string format
 #'
-#' @examples
 convertGenoListToString <- function(genoList, genopheno) {
   genoString <- "" # start with empty string
   for(lg in 1:length(genoList)) { # loop over all linkage groups
@@ -102,7 +99,6 @@ convertGenoListToString <- function(genoList, genopheno) {
 #'
 #' @return Genotype in list format
 #'
-#' @examples
 swapAlleles <- function(gt, lg, loc) {
   dummy <- gt[[lg]][[loc]][1]
   gt[[lg]][[loc]][1] <- gt[[lg]][[loc]][2]
@@ -119,7 +115,6 @@ swapAlleles <- function(gt, lg, loc) {
 #' @return A genotype in list format.
 #'         This genotype is identical to the supplied one except for the swapped linkage group.
 #'
-#' @examples
 swapAllAlleles <- function(gt, lg) {
   for(i in 1:length(gt[[lg]])) gt <- swapAlleles(gt, lg, i)
   return(gt)
@@ -133,7 +128,6 @@ swapAllAlleles <- function(gt, lg) {
 #'
 #' @return Index of genotype within list, or \code{NA} if the genotype is not found
 #'
-#' @examples
 matchGenotypes <- function(gt, genotypes) {
   m <- NA
   for(i in 1:length(genotypes)) {
@@ -246,26 +240,43 @@ getEquivalents <- function(gt, genopheno, equivalent) {
 }
 
 
+#' Creates an empty genotype in list format
+#'
+#' The generated genotype object has the specified number of linkage groups, loci etc.,
+#' but only has NAs at all allelic positions.
+#'
+#' @param genopheno The genetic system that the genotype is part of
+#'
+#' @return A genotype object in list format
+#'
+createEmptyGenotype <- function(genopheno) {
+  nLGs <- length(genopheno$geno)  # expected number of linkage groups
+  geno <- vector("list", nLGs)
+  for(lg in 1:nLGs) {  # loop over all linkage groups
+    if (genopheno$geno[[lg]]$type == 'autosomal') {
+      ploidy <-2
+    } else {
+      stop("Non-autosomal linkage groups not yet implemented")
+    }
+    geno[[lg]] <- vector("list", genopheno$geno[[lg]]$nloci)
+    for(i in 1:genopheno$geno[[lg]]$nloci) { # loop over all loci
+      geno[[lg]][[i]] <- rep(NA, ploidy)
+    }
+  }
+  return(geno)
+}
 
-# The functions below should no longer be necessary:
 
-# swap two characters in a string s at positions pos1 and pos2:
-#swap.chars<-function(s,pos1,pos2)
-#{
-#  c<-substr(s,pos1,pos1)
-#  substr(s,pos1,pos1)<-substr(s,pos2,pos2)
-#  substr(s,pos2,pos2)<-c
-#  return(s)
-#}
-
-# insert placeholders ("_") in all genotype names at positions
-# specified by the vector pos
-
-#insert.placeholders<-function(pos)
-#{
-#  genotypes<-names(PHEN)
-#  for(p in pos) substr(genotypes,p,p)<-"_"
-#  return(genotypes)
-#}
+#' Check if argument is a valid genotype string
+#'
+#' @param gtString A genotype in string format.
+#' @param genopheno genopheno object specifying the genetic setup.
+#'
+#' @return Returns TRUE if gtString is a genotype within the genopheno object
+#'
+isValidGenotype <- function(gtString, genopheno) {
+  gtString <- tidyGenoString(gtString)
+  return(convertGenoListToString(convertGenoStringToList(gtString, genopheno), genopheno) == gtString)
+}
 
 
