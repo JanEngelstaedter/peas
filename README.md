@@ -48,5 +48,5 @@ To install the peas package, you can run the following two lines of code:
 
 ``` r
 install.packages("devtools")
-devtools::install_github("JanEngelstaedter/peas")
+devtools::install_github("JanEngelstaedter/peas", build_vignettes = TRUE)
 ```
