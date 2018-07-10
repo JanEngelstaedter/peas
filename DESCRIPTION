@@ -10,7 +10,9 @@ Description: Functions for defining systems of Mendelian inheritance (defined br
     per locus. Several traits can be defined, potentially involving pleiotropy, polygeny and epistasis. 
     The systems can also include parent-of-origin effects (e.g., genomic imprinting) and cis-regulatory effects.
     Currently, only autosomal linkage groups are supported.
-License: GPL-3
+License: GPL-2 | file LICENSE
+URL: https://github.com/JanEngelstaedter/peas
+BugReports: https://github.com/JanEngelstaedter/peas/issues
 Encoding: UTF-8
 LazyData: true
 VignetteBuilder: knitr

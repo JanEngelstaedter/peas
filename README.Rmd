@@ -33,7 +33,7 @@ Once defined, it is easy to predict offspring genotype and phenotype distributio
 predictCross(MendelsPeas, 'Yy', 'Yy')
 ```
 
-A detailed description of the package with more examples can be found in the package vignette.
+A detailed description of the package with more examples can be found in the package vignette (after installing the package, call `browseVignettes("peas")').
 
 ## Installation
 
