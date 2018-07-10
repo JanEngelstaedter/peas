@@ -39,7 +39,7 @@ predictCross(MendelsPeas, 'Yy', 'Yy')
 #> 2 yellow     0.75
 ```
 
-A detailed description of the package with more examples can be found in the package vignette.
+A detailed description of the package with more examples can be found in the package vignette (after installing the package, call \`browseVignettes("peas")').
 
 Installation
 ------------
