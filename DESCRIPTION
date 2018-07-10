@@ -7,7 +7,7 @@ Authors@R: person("Jan", "Engelstaedter", email = "j.engelstaedter@uq.edu.au",
 Description: Functions for defining systems of Mendelian inheritance (defined broadly)
     and making predictions about the distribution of offspring genotypes and phenotypes
     in genetic crosses. The package can handle arbitrary numbers of linkage groups, loci and alleles
-    per locus. An arbitrary number of traits is supported, potentially involving pleiotropy, polygeny and epistasis. 
+    per locus. Several traits can be defined, potentially involving pleiotropy, polygeny and epistasis. 
     The systems can also include parent-of-origin effects (e.g., genomic imprinting) and cis-regulatory effects.
     Currently, only autosomal linkage groups are supported.
 License: GPL-3

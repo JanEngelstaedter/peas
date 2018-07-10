@@ -60,9 +60,9 @@ As expected, all offspring are heterozygous and therefore, all offspring have ye
 predictCross(MendelsPeas, 'Yy', 'Yy')
 ```
 
-In the following section, more details will be provided on how to define genetic systems, assign traits and predict crosses. A final section will cover different settings for equivalencies between genotypes and how they can be used to incorporate parent-of-origin  and cis-regulatory effects.
+In the following section, more details will be provided on how to define genetic systems, assign traits and predict crosses. A final section will cover different settings for equivalencies between genotypes and how they can be used to incorporate parent-of-origin and cis-regulatory effects.
 
-This package is under active development. I would greatly appreciate any comments, feedback, bug reports or suggestions for new features. Simply send an email to: j.engelstaedter@uq.edu.au. Thanks!
+This package is under active development. Comments, feedback, bug reports or suggestions for new features would be greatly appreciated: simply send an email to j.engelstaedter@uq.edu.au. Thanks!
 
 ## Defining genetic systems
 

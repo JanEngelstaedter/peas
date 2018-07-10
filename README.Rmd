@@ -1,0 +1,45 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# peas
+
+The purpose of this R package is to predict offspring distributions in genetic crosses. The package contains functions for defining systems of Mendelian inheritance (defined broadly),
+and making predictions about the distribution of offspring genotypes and phenotypes
+in genetic crosses. The package can handle arbitrary numbers of linkage groups, loci and alleles per locus. Several traits can be defined, potentially involving pleiotropy, polygeny and epistasis.
+
+## Example
+
+Here is a simple example for how one can define a genetic system along with a trait:
+```{r}
+library(peas)
+MendelsPeas <- newGenopheno(alleleNames = list(c('Y', 'y')))
+MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'Y_', 'yellow')
+MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'yy', 'green')
+MendelsPeas
+```
+
+Once defined, it is easy to predict offspring genotype and phenotype distributions in crosses:
+```{r}
+predictCross(MendelsPeas, 'Yy', 'Yy')
+```
+
+A detailed description of the package with more examples can be found in the package vignette.
+
+## Installation
+
+To install the peas package, you can run the following two lines of code:
+
+```{r installation, eval = FALSE}
+install.packages("devtools")
+devtools::install_github("JanEngelstaedter/peas")
+```
