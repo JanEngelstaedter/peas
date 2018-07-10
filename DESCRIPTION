@@ -1,18 +1,17 @@
-Package: peasr
+Package: peas
 Type: Package
 Title: Predicting patterns of Mendelian inheritance
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: person("Jan", "Engelstaedter", email = "j.engelstaedter@uq.edu.au",
   role = c("aut", "cre"))
 Description: Functions for defining systems of Mendelian inheritance (defined broadly)
     and making predictions about the distribution of offspring genotypes and phenotypes
-    in crosses. The package can handle arbitrary numbers of linkage groups, loci and alleles
-    per locus, as well as arbitrarily defined phenotypes for one or more traits. This means that
-    traits can be polygeneic and involve epistasis. 
-    Gene expression that is parent-of-origin specific (imprinting) or controled by other genes in cis
-    is also supported. 
-    The current version only supports autosomal linkage groups.
+    in genetic crosses. The package can handle arbitrary numbers of linkage groups, loci and alleles
+    per locus. An arbitrary number of traits is supported, potentially involving pleiotropy, polygeny and epistasis. 
+    The systems can also include parent-of-origin effects (e.g., genomic imprinting) and cis-regulatory effects.
+    Currently, only autosomal linkage groups are supported.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 VignetteBuilder: knitr
+RoxygenNote: 6.0.1

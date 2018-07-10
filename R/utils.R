@@ -1,14 +1,23 @@
-#' Genotype string tidying
-#'
-#' Converts a character string representing a genotype into a canonical form
-#' where spaces within linkage groups are removed and linkage groups are
-#' connected by ' | '.
-#'
-#' @param genoString The character string to be tidied.
-#'
-#' @return A tidy genotype string.
-#'
-#' tidyGenoString("  aA ~bb|CC")
+## utils.R (2018-07-07)
+##
+## Various non-exported helper functions
+##
+## Copyright 2018 Jan Engelstaedter
+##
+## This file is part of the R-package `peas'.
+
+
+# Genotype string tidying
+#
+# Converts a character string representing a genotype into a canonical form
+# where spaces within linkage groups are removed and linkage groups are
+# connected by ' | '.
+#
+# @param genoString The character string to be tidied.
+#
+# @return A tidy genotype string.
+#
+# tidyGenoString("  aA ~bb|CC")
 tidyGenoString <- function(genoString) {
   tidyGeno <- gsub(" ", "", genoString)
   tidyGeno <- gsub("\\|", " | ", tidyGeno)
@@ -25,16 +34,16 @@ insertPlaceholders<-function(strings, pos)
 }
 
 
-#' Convert from genotype string to list format
-#'
-#' Genotypes are internally represented as lists but specified as strings by the user.
-#' This function converts from the latter into the former format.
-#'
-#' @param genoString Character string representing a genotype
-#' @param genopheno The genetic system that the genotype is part of
-#'
-#' @return A genotype object in list format
-#'
+# Convert from genotype string to list format
+#
+# Genotypes are internally represented as lists but specified as strings by the user.
+# This function converts from the latter into the former format.
+#
+# @param genoString Character string representing a genotype
+# @param genopheno The genetic system that the genotype is part of
+#
+# @return A genotype object in list format
+#
 convertGenoStringToList <- function(genoString, genopheno) {
   genoString <- tidyGenoString(genoString)  # removing excess spaces etc.
   nLGs <- length(genopheno$geno)  # expected number of linkage groups
@@ -68,16 +77,16 @@ convertGenoStringToList <- function(genoString, genopheno) {
   return(genoList)
 }
 
-#' Convert from genotype list to string format
-#'
-#' Genotypes are internally represented as lists but specified as strings by the user.
-#' This function converts from the former into the latter format.
-#'
-#' @param genoList A genotype representation in list format.
-#' @param genopheno The genetic system that the genotype is part of
-#'
-#' @return Genotype in string format
-#'
+# Convert from genotype list to string format
+#
+# Genotypes are internally represented as lists but specified as strings by the user.
+# This function converts from the former into the latter format.
+#
+# @param genoList A genotype representation in list format.
+# @param genopheno The genetic system that the genotype is part of
+#
+# @return Genotype in string format
+#
 convertGenoListToString <- function(genoList, genopheno) {
   genoString <- "" # start with empty string
   for(lg in 1:length(genoList)) { # loop over all linkage groups
@@ -91,14 +100,14 @@ convertGenoListToString <- function(genoList, genopheno) {
   return(genoString)
 }
 
-#' Swapping alleles at the two positions of a locus
-#'
-#' @param gt Genotype in list format
-#' @param lg Linkage group numer
-#' @param loc Locus number
-#'
-#' @return Genotype in list format
-#'
+# Swapping alleles at the two positions of a locus
+#
+# @param gt Genotype in list format
+# @param lg Linkage group numer
+# @param loc Locus number
+#
+# @return Genotype in list format
+#
 swapAlleles <- function(gt, lg, loc) {
   dummy <- gt[[lg]][[loc]][1]
   gt[[lg]][[loc]][1] <- gt[[lg]][[loc]][2]
@@ -107,27 +116,27 @@ swapAlleles <- function(gt, lg, loc) {
 }
 
 
-#' Swapping the two alleles at all loci of a linkage group
-#'
-#' @param gt Genotype in list format.
-#' @param lg Linkage group where alleles should be swapped.
-#'
-#' @return A genotype in list format.
-#'         This genotype is identical to the supplied one except for the swapped linkage group.
-#'
+# Swapping the two alleles at all loci of a linkage group
+#
+# @param gt Genotype in list format.
+# @param lg Linkage group where alleles should be swapped.
+#
+# @return A genotype in list format.
+#         This genotype is identical to the supplied one except for the swapped linkage group.
+#
 swapAllAlleles <- function(gt, lg) {
   for(i in 1:length(gt[[lg]])) gt <- swapAlleles(gt, lg, i)
   return(gt)
 }
 
 
-#' Find the index of a genotype in a list of genotypes
-#'
-#' @param gt Genotype (in list format)
-#' @param genotypes List of genotypes
-#'
-#' @return Index of genotype within list, or \code{NA} if the genotype is not found
-#'
+# Find the index of a genotype in a list of genotypes
+#
+# @param gt Genotype (in list format)
+# @param genotypes List of genotypes
+#
+# @return Index of genotype within list, or \code{NA} if the genotype is not found
+#
 matchGenotypes <- function(gt, genotypes) {
   m <- NA
   for(i in 1:length(genotypes)) {
@@ -140,12 +149,12 @@ matchGenotypes <- function(gt, genotypes) {
 }
 
 
-#' A vector containing all possible genotypes in string format
-#'
-#' @param genopheno A genopheno object containing all information about a genetic setup.
-#'
-#' @return A vector of strings, each representing a possible genotype.
-#'
+# A vector containing all possible genotypes in string format
+#
+# @param genopheno A genopheno object containing all information about a genetic setup.
+#
+# @return A vector of strings, each representing a possible genotype.
+#
 getAllGenoStrings <- function(genopheno) {
   # generating table of possible configurations:
   poss <- list()  # list of possibilities for each locus
@@ -181,19 +190,19 @@ getAllGenoStrings <- function(genopheno) {
 }
 
 
-#' Determines which genotypes are equivalent to a given genotype.
-#'
-#' @param gt A genotype in list format.
-#' @param genopheno A genopheno object containing all information about a genetic setup.
-#' @param equivalent Argument determining which genotypes are to be treated as equivalent.
-#' Possible options are "phase" (genotypes that differ only by phase are equivalent,
-#' i.e. the order of alleles within a locus does not matter),
-#' "origin" (phase is important but not the origin of alleles),
-#' and "none" (no two genotypes are equivalent).
-#'
-#' @return A list of genotypes (in list format) that are all equivalent to each other,
-#'         including the genotype supplied as argument.
-#'
+# Determines which genotypes are equivalent to a given genotype.
+#
+# @param gt A genotype in list format.
+# @param genopheno A genopheno object containing all information about a genetic setup.
+# @param equivalent Argument determining which genotypes are to be treated as equivalent.
+# Possible options are "phase" (genotypes that differ only by phase are equivalent,
+# i.e. the order of alleles within a locus does not matter),
+# "origin" (phase is important but not the origin of alleles),
+# and "none" (no two genotypes are equivalent).
+#
+# @return A list of genotypes (in list format) that are all equivalent to each other,
+#         including the genotype supplied as argument.
+#
 getEquivalents <- function(gt, genopheno, equivalent) {
   lgs <- length(genopheno$geno)
   if (equivalent == "phase") {
@@ -240,15 +249,15 @@ getEquivalents <- function(gt, genopheno, equivalent) {
 }
 
 
-#' Creates an empty genotype in list format
-#'
-#' The generated genotype object has the specified number of linkage groups, loci etc.,
-#' but only has NAs at all allelic positions.
-#'
-#' @param genopheno The genetic system that the genotype is part of
-#'
-#' @return A genotype object in list format
-#'
+# Creates an empty genotype in list format
+#
+# The generated genotype object has the specified number of linkage groups, loci etc.,
+# but only has NAs at all allelic positions.
+#
+# @param genopheno The genetic system that the genotype is part of
+#
+# @return A genotype object in list format
+#
 createEmptyGenotype <- function(genopheno) {
   nLGs <- length(genopheno$geno)  # expected number of linkage groups
   geno <- vector("list", nLGs)
@@ -267,13 +276,13 @@ createEmptyGenotype <- function(genopheno) {
 }
 
 
-#' Check if argument is a valid genotype string
-#'
-#' @param gtString A genotype in string format.
-#' @param genopheno genopheno object specifying the genetic setup.
-#'
-#' @return Returns TRUE if gtString is a genotype within the genopheno object
-#'
+# Check if argument is a valid genotype string
+#
+# @param gtString A genotype in string format.
+# @param genopheno genopheno object specifying the genetic setup.
+#
+# @return Returns TRUE if gtString is a genotype within the genopheno object
+#
 isValidGenotype <- function(gtString, genopheno) {
   gtString <- tidyGenoString(gtString)
   return(convertGenoListToString(convertGenoStringToList(gtString, genopheno), genopheno) == gtString)

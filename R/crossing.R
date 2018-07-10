@@ -1,16 +1,25 @@
-#' Generates a table of all possible egg configurations
-#'
-#' In this table, each egg configuration is a way in which alleles could be drawn from a
-#' genotype to produce an egg haplotype. The table also has a column with expected
-#' fractions of these configurations.
-#' Given an actual genotype, each configuration can then be used to generate the actual egg haplotype.
-#'
-#' @param genopheno A genopheno object containing all information about the genetic setup.
-#'
-#' @return A data frame whose first columns represent all loci.
-#' For each locus, a number 1 represents the maternal allele, 2 represents the paternal allele,
-#' and 0 represents no allele. The last column contains the expected fraction of each configuration.
-#'
+## crossing.R (2018-07-07)
+##
+## Functions for predicting genetic crosses between individuals
+##
+## Copyright 2018 Jan Engelstaedter
+##
+## This file is part of the R-package `peas'.
+
+
+# Generates a table of all possible egg configurations
+#
+# In this table, each egg configuration is a way in which alleles could be drawn from a
+# genotype to produce an egg haplotype. The table also has a column with expected
+# fractions of these configurations.
+# Given an actual genotype, each configuration can then be used to generate the actual egg haplotype.
+#
+# @param genopheno A genopheno object containing all information about the genetic setup.
+#
+# @return A data frame whose first columns represent all loci.
+# For each locus, a number 1 represents the maternal allele, 2 represents the paternal allele,
+# and 0 represents no allele. The last column contains the expected fraction of each configuration.
+#
 getEggConfigurations <- function(genopheno) {
   # generating table of possible configurations:
   poss <- list()  # list of possibilities for each locus
@@ -57,19 +66,19 @@ getEggConfigurations <- function(genopheno) {
   return(conf)
 }
 
-#' Generates a table of all possible sperm configurations
-#'
-#' In this table, each sperm configuration is a way in which alleles could be drawn from a
-#' genotype to produce an egg haplotype. The table also has a column with expected
-#' fractions of these configurations.
-#' Given an actual genotype, each configuration can then be used to generate the actual sperm haplotype.
-#'
-#' @param genopheno A genopheno object containing all information about the genetic setup.
-#'
-#' @return A data frame whose first columns represent all loci.
-#' For each locus, a number 1 represents the maternal allele, 2 represents the paternal allele,
-#' and 0 represents no allele. The last column contains the expected fraction of each configuration.
-#'
+# Generates a table of all possible sperm configurations
+#
+# In this table, each sperm configuration is a way in which alleles could be drawn from a
+# genotype to produce an egg haplotype. The table also has a column with expected
+# fractions of these configurations.
+# Given an actual genotype, each configuration can then be used to generate the actual sperm haplotype.
+#
+# @param genopheno A genopheno object containing all information about the genetic setup.
+#
+# @return A data frame whose first columns represent all loci.
+# For each locus, a number 1 represents the maternal allele, 2 represents the paternal allele,
+# and 0 represents no allele. The last column contains the expected fraction of each configuration.
+#
 getSpermConfigurations <- function(genopheno) {
   # generating table of possible configurations:
   poss <- list()  # list of possibilities for each locus
@@ -135,8 +144,15 @@ getSpermConfigurations <- function(genopheno) {
 #' offspring genotypes, a dataframe containing the distribution of offspring phenotypes,
 #' or both (combined in a list).
 #' @export
+#' @import stats
 #'
 #' @examples
+#' MendelsPeas <- newGenopheno(alleleNames = list(c('Y', 'y')))
+#' MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'Y_', 'yellow')
+#' MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'yy', 'green')
+#' predictCross(MendelsPeas, 'YY', 'yy')
+#' predictCross(MendelsPeas, 'Yy', 'Yy')
+#'
 predictCross <- function(genopheno, mom, dad, equivalent = "phase", output = "both") {
   if (!isValidGenotype(mom, genopheno))
     stop("Maternal genotype not recognised.")

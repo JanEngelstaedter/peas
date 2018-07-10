@@ -1,8 +1,16 @@
+## output.R (2018-07-07)
+##
+## Functions for displaying information about genetic systems
+##
+## Copyright 2018 Jan Engelstaedter
+##
+## This file is part of the R-package `peas'.
 
 
 #' Print information about genotypes and corresponding phenotypes.
 #'
-#' @param gp Object of class \code{genopheno}
+#' @param x an obbject of class \code{genopheno}
+#' @param ... further arguments passed to or from other methods
 #'
 #' @return NULL
 #' @export
@@ -14,41 +22,41 @@
 #' MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'yy', 'green')
 #' MendelsPeas
 #'
-print.genopheno <- function(gp) {
-  nLGs <- length(gp$geno) # number of linkage groups
+print.genopheno <- function(x, ...) {
+  nLGs <- length(x$geno) # number of linkage groups
   if (nLGs == 1)
     cat("Genetic system comprising one linkage group:\n")
   else
     cat("Genetic system comprising ",nLGs, " linkage groups:\n", sep="")
   for(i in 1:nLGs) {
-    if (gp$geno[[i]]$nloci == 1)
-      cat("  Linkage group ",i,": ",gp$geno[[i]]$type, ", ", gp$geno[[i]]$nloci, " locus\n", sep="")
-    else if (gp$geno[[i]]$nloci == 2)
-      cat("  Linkage group ",i,": ",gp$geno[[i]]$type, ", ", gp$geno[[i]]$nloci, " loci with recombination rate ", gp$geno[[i]]$rec,"\n", sep="")
-    else if (gp$geno[[i]]$nloci > 2) {
-      cat("  Linkage group ",i,": ",gp$geno[[i]]$type, ", ", gp$geno[[i]]$nloci, " loci with recombination rates (", sep="")
-      cat(gp$geno[[i]]$rec, sep=", ")
+    if (x$geno[[i]]$nloci == 1)
+      cat("  Linkage group ",i,": ",x$geno[[i]]$type, ", ", x$geno[[i]]$nloci, " locus\n", sep="")
+    else if (x$geno[[i]]$nloci == 2)
+      cat("  Linkage group ",i,": ",x$geno[[i]]$type, ", ", x$geno[[i]]$nloci, " loci with recombination rate ", x$geno[[i]]$rec,"\n", sep="")
+    else if (x$geno[[i]]$nloci > 2) {
+      cat("  Linkage group ",i,": ",x$geno[[i]]$type, ", ", x$geno[[i]]$nloci, " loci with recombination rates (", sep="")
+      cat(x$geno[[i]]$rec, sep=", ")
       cat(")\n")
     }
 
-    for(j in 1:gp$geno[[i]]$nloci) {
+    for(j in 1:x$geno[[i]]$nloci) {
       cat("    Alleles at locus ",j,": ", sep="")
-      for(k in 1:(gp$geno[[i]]$nalleles[j] -1 ))
-        cat(gp$geno[[i]]$alleleNames[[j]][k],", ",sep="")
-      cat(gp$geno[[i]]$alleleNames[[j]][gp$geno[[i]]$nalleles[j]],"\n",sep="")
+      for(k in 1:(x$geno[[i]]$nalleles[j] -1 ))
+        cat(x$geno[[i]]$alleleNames[[j]][k],", ",sep="")
+      cat(x$geno[[i]]$alleleNames[[j]][x$geno[[i]]$nalleles[j]],"\n",sep="")
     }
   }
 
-  if (is.null(gp$pheno)) {
+  if (is.null(x$pheno)) {
     cat('No phenotypes defined.')
   } else {
     cat('Phenotypes defined for the following traits:\n')
-    for(i in 1:ncol(gp$pheno)) {
-      cat("  ", colnames(gp$pheno)[i], " (trait values: ", sep="")
-      cat(unique(gp$pheno[,i]), sep=", ")
+    for(i in 1:ncol(x$pheno)) {
+      cat("  ", colnames(x$pheno)[i], " (trait values: ", sep="")
+      cat(unique(x$pheno[,i]), sep=", ")
       cat(")\n")
     }
-    if(any(is.na(gp$pheno))) cat("\n  Note: some genotypes have undefined trait values.")
+    if(any(is.na(x$pheno))) cat("\n  Note: some genotypes have undefined trait values.")
   }
 }
 

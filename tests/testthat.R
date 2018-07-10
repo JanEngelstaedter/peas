@@ -1,4 +1,4 @@
 library(testthat)
-library(peasr)
+library(peas)
 
-test_check("peasr")
+test_check("peas")

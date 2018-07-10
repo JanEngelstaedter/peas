@@ -1,0 +1,302 @@
+---
+title: "peas: a package to predict patterns of Mendelian inheritance"
+author: "Jan Engelstaedter"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{peas}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(peas)
+```
+
+## Introduction
+
+The purpose of this R package is to predict offspring distributions in genetic crosses. This may help researchers and breeders in designing crossing schemes or in testing whether a hypothesised genetic system is in accord with observed offspring distributions in crosses. The package could also be used for teaching Mendelian genetics.
+
+The general workflow is straightforward. First, the genetic system is defined using the functions `newGenopheno` and `addLinkageGroup`. Second, phenotypes are added to the sysem using the `setPhenotypes` function. Finally, the function `predictCross` is used to predict the distribution of offspring genotypes and phenotypes in crosses. Below, these functions will be described in more detail, but it may be useful to first go through a simple example. Naturally, we will choose Mendel's peas.
+
+We will consider a single locus with the dominant allele *Y*, coding for yellow pea colour, and the recessive allele *y*, coding for green peas. The following line of code defines the basic genetic setup for this system and stores it in an object that we call `MendelsPeas`:
+
+```{r}
+MendelsPeas <- newGenopheno(alleleNames = list(c('Y', 'y')))
+```
+
+We can take a look at this new object by calling it:
+```{r}
+MendelsPeas
+```
+This shows that `MendelsPeas` has the desired genetic properties, but we still need to define the phenotypes. This is done by:
+
+```{r}
+MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'Y_', 'yellow')
+MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'yy', 'green')
+```
+Here, the underscore character ("_") is a wildcard that stands for any of the possible alleles, i.e. both *YY* homozygotes and *Yy* heterozygotes are assigned the 'yellow' trait. Calling again
+```{r}
+MendelsPeas
+```
+shows that now we do have some trait information attached to the `MendelsPeas` object.
+To get more detailed information about the phenotypes, we can also look at the traits of all possible genotypes by calling the function `getPhenotypes`:
+```{r}
+getPhenotypes(MendelsPeas)
+```
+
+Our genetic system is now well defined and we can predict crosses.
+Let us start with the cross between the two homozygotes:
+```{r}
+predictCross(MendelsPeas, 'YY', 'yy')
+```
+
+As expected, all offspring are heterozygous and therefore, all offspring have yellow peas. An F2 cross between two of these offspring then produces a 3:1 ratio of trait values, as expected from Mendel's laws:
+```{r}
+predictCross(MendelsPeas, 'Yy', 'Yy')
+```
+
+In the following section, more details will be provided on how to define genetic systems, assign traits and predict crosses. A final section will cover different settings for equivalencies between genotypes and how they can be used to incorporate parent-of-origin  and cis-regulatory effects.
+
+This package is under active development. I would greatly appreciate any comments, feedback, bug reports or suggestions for new features. Simply send an email to: j.engelstaedter@uq.edu.au. Thanks!
+
+## Defining genetic systems
+
+Within the scope of this package, a genetic system is a specification of the linkage groups, loci within each linkage group, recombination rates between these loci and the number and  names of alleles at each locus. All of this information is stored in a single object belonging to a class called `genopheno`. (A technical detail: this is an S3 class defined within the package.) Once the genetic details are defined, phenotypic information can be added to the same `genopheno` object. 
+
+In order to define a genetic system, the function `newGenopheno` is used. This function generates a genetic  system consisting of a single linkage group. Its arguments all have natural default values so that calling
+```{r}
+mySystem <- newGenopheno()
+```
+works and creates a genetic system with a single biallelic locus with alleles *a* and *A*. This can be checked by simply calling the object we have created:
+```{r}
+mySystem
+```
+We can define more loci by setting a value to the `nloci` argument and also defining recombination rates between the loci:
+```{r}
+mySystem <- newGenopheno(nloci = 3, rec = c(0.01, 0.02))
+```
+This assumes that all loci have two alleles, and the alleles will be automatically named with consecutive lower and upper case letters for each locus. Again, the result can be checked by calling the object we have created:
+```{r}
+mySystem
+```
+If we want more than two alleles, this can be done by providing a vector of allele numbers for each locus:
+```{r}
+mySystem <- newGenopheno(nloci = 3, nalleles = c(2, 3, 4), rec = c(0.01, 0.02))
+mySystem
+```
+Note that now the allele names are no longer lower and upper case letters but lower case letters followed by numbers. 
+
+It is also possible to name the alleles differently. This is done by using the `alleleNames` argument, which needs to be a list of vectors. Each vector corresponds to one locus and the elements of that vector are character strings representing the allele names at that locus. For example, we could define a system for blood types like this:
+```{r}
+mySystem <- newGenopheno(nloci = 2, nalleles = c(3, 2), 
+                         alleleNames = list(c('A','B','0'), c('Rh+', 'Rh-')), rec = 0.5)
+mySystem
+```
+Allele names can be single characters or character strings of arbitrary length, but with the following restrictions:
+
+* If allele names are given, they must be given for all alleles and loci. In other words, the argument `alleleNames` must be a list of lenght `nloci` and each vector in that list must have the corresponding number of elements, `nalleles[i]`. If the user wants to give standard names to only some alleles or loci, this must be done manually.
+* All allele names at a particular locus must have the same length. Thus, trying to name two alleles 'wt' and 'R' would cause an error.
+* For reasons that will become clear in the following sections, the following characters are not allowed within allele names: "_" (underscore), "." (dot), "~" (tilde), "|" (vertical bar), and " " (space).
+* Naturally, within each locus the allele names need to be different. It is possible to use the same allele names for different loci, but this is probably not advisable.
+
+So far, the genetic systems we have defined consisted of a single linkage group. We can add more linkage groups
+using the function `addLinkageGroup`, in the simplest case:
+```{r}
+mySystem <- newGenopheno()
+mySystem <- addLinkageGroup(mySystem)
+mySystem
+```
+Note the syntax here: the `addLinkageGroup` function expects an existing genetic system (a `genopheno` object)
+as an argument, to which it then adds another linkage group. The other arguments of the `addLinkageGroup` function
+are the same as for the `newGenopheno` function and have the same default values. For example, the blood type system
+defined above could also be defined as:
+```{r}
+mySystem <- newGenopheno(nalleles = 3, alleleNames = list(c('A','B','0')))
+mySystem <- addLinkageGroup(mySystem, alleleNames = list(c('Rh+', 'Rh-')))
+mySystem
+```
+This system is displayed differently from the one we defined previously but behaves in exactly the same way.
+One advantage of defining different linkage groups is that recombination rates need not be specified because 
+there is always free recombination between loci on different linkage groups. Future versions of this package will
+also allow for different linkage groups to follow different patterns of inheritance, but in the current version 
+all linkage groups are assumed to follow the canonical autosomal mode of inheritance.
+
+## Adding phenotypes
+
+Once the formal aspects of the genetic system have been defined, it is time to add phenotypic information. This is done using the `setPhenotypes` function, and in a way that is similar to adding new linkage groups. In the simplest case:
+```{r}
+mySystem <- newGenopheno()
+mySystem <- setPhenotypes(mySystem, 'colour', c('AA', 'Aa'), 'black')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa', 'white')
+mySystem
+```
+
+Here, the first call of `setPhenotypes` adds a new trait called 'colour' to the `genopheno` object and sets the trait values for the two genotypes *AA* and *Aa* to the value 'black'. The second call of `setPhenotypes` then sets the trait value for the 'aa' genotype to 'white'. Displaying the `mySystem` object shows that it now contains information about one trait. We can add another trait in the same way:
+
+```{r}
+mySystem <- setPhenotypes(mySystem, 'size', c('AA', 'aa'), 'big')
+mySystem <- setPhenotypes(mySystem, 'size', 'Aa', 'small')
+mySystem
+```
+
+We can also display more detailed information about the traits using the `getPhenotypes` function:
+```{r}
+getPhenotypes(mySystem)
+```
+
+This shows the trait values for all possible genotypes. 
+This example also illustrates that genes can act pleiotropically, i.e. affect multiple traits.
+
+In the above example, traits were spefified individually for each genotype. However, for multiple loci and/or alleles per locus, this can become rather tedious. Therefore, the `setPhenotypes` function also supports the placeholder (or 'wildcard') character '_' that can stand for any possible allele. So, when defining the colours in the above example, we could also have done this by
+```{r}
+mySystem <- setPhenotypes(mySystem, 'colour', 'A_', 'black')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa', 'white')
+```
+Another, probably less clear but equivalent option would have been:
+```{r}
+mySystem <- setPhenotypes(mySystem, 'colour', '__', 'black')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa', 'white')
+```
+Here, the first call of `setPhenotypes` assigns the colour 'black' to all three genotypes, and the second call then overrides the colour for the *aa* genotype to the value 'white'.
+
+More generally, the following syntax rules must be followed when specifying genotype strings:
+
+* For each locus, the number of underscore characters replacing an allele need to match the length of the allele names. For example, if the allele names at a locus are "A" and "a", a single "_" character should be used, but if the allele names are "a1" and "a2", then two "_" characters should be used.
+* Loci within a linkage group are separated by the "~" (tilde) character.
+* Linkage groups are separated by the "|" (vertical bar) character
+* Spaces are ignored in the character strings spefifying genotypes, so we can arbitrarily add spaces between alleles, loci or linkage groups to increase clarity.
+
+To see these rules in action, let us go back to the blood type example and specify the traits:
+```{r}
+mySystem <- newGenopheno(nalleles = 3, alleleNames = list(c('A','B','0')))
+mySystem <- addLinkageGroup(mySystem, alleleNames = list(c('Rh+', 'Rh-')))
+mySystem <- setPhenotypes(mySystem, 'AB type', 'A_ | ___ ___', 'A')
+mySystem <- setPhenotypes(mySystem, 'AB type', 'B_ | ___ ___', 'B')
+mySystem <- setPhenotypes(mySystem, 'AB type', 'AB | ___ ___', 'AB')
+mySystem <- setPhenotypes(mySystem, 'AB type', '00 | ___ ___', '0')
+mySystem <- setPhenotypes(mySystem, 'Rh type', '__ | Rh+ ___', '+')
+mySystem <- setPhenotypes(mySystem, 'Rh type', '__ | Rh- Rh-', '-')
+mySystem
+getPhenotypes(mySystem)
+```
+
+The first four calls of `setPhenotypes` specify the AB blood type. Since this trait is only affected by the first locus, we can use the placeholder throughout for the second locus so that all genotypes that have the specified configuration at the first locus are assigned the AB trait value, irrespective of the allelic configuration at the second locus. The last two calls of `setPhenotypes` then set the Rh type trait, this time for all allelic configurations at the first locus. 
+
+Note that the very first call of `setPhenotypes` assigns the (wrong) trait value 'A' to all *AB* genotypes (with arbitrary alleles at the second locus), the second call of `setPhenotypes` then assigns the (still wrong) trait value 'B' to all *AB* genotypes, and only the third call assigns the correct trait value 'AB'. This illustrates that the order in which traits are assigned to genotypes can be important if placeholders are used in an efficient manner that makes use of the possibility to overwrite existing trait values.
+
+## Predicting crosses
+
+We have defined our genetic system along with all the phenotypic information, so we would finally like to predict the outcome of some crosses in our system. This step is now very straightforward, using the function `predictCross`. This function takes three main arguments: the genetic system (our `genopheno` object), the maternal genotype, and the paternal genotype. The latter two genotypes are supplied again by strings following the same syntax rules as used for definined phenotypes, except that no wildcards are permitted. 
+
+We have already seen an example for Mendel's peas in the Introduction, so let us now continue with the blood type example as defined above and consider one possible mating between an 0/Rh+ mother and a B/Rh+ father:
+```{r}
+offspring <- predictCross(mySystem, 'A0 | Rh+Rh-', 'BB | Rh+Rh-')
+offspring
+```
+
+The output of the `predictCross` function is a list containing two dataframe objects. The first dataframe is a table of offspring genotypes, along with their predicted frequency among all offspring. The second dataframe is a table of showing all offspring phenotypes (combinations of trait values), again with their predicted frequencies. This second table is shorter than the first one because several genotypes can give rise to the same phenotype and are therefore collapsed into one row in the second table. (For example, the *AB | Rh+Rh+* and the *AB | Rh+Rh-* genotype both produce the 'AB Rh+' phenotype.) 
+
+Calling `offspring$genotypes` or `offspring$phenotypes` allows one to extract the two dataframes individually. This may be useful for downstream applications, e.g. a chi-square test to see whether experimentally observed offspring distributions deviate significantly from the expected distribution. The function `predictCross` also has a parameter `output` specifying what should be returned. If one is only interested in the phenotype distribution, the function can be called as `predictCross(..., output = 'phenotypes')` and only the second, phenotype dataframe is returned. Alternative options for `output` are 'genotypes' (only the genotype distribution) or 'both' (the default setting).
+
+## Equivalencies between genotypes
+
+This is a more advanced topic that is not essential for most applications but is useful for users who would like to incorporate parent-of-origin effects (e.g. genomic imprinting) or cis-regulatory effects into their genetic models.
+
+Internally, `genopheno` objects and package functions distinguish between the two alleles at a locus: if an individual has genotype *Aa*, this means that *A* is an allele that was inherited from the mother and *a* was inherited from the father. Therefore, *Aa* and *aA* are treated internally as two distinct genotypes. However, in terms of phenotypes this distinction is usually not important and *Aa* and *aA* can be considered the same genotype (equivalent). This is indeed how the package, when interacting with the user, normally treats genotypes. However, which genotypes (if any) are treated as equivalent can be determined by the user. More precicely, there is an argument called `equivalent` in the functions `setPhenotypes`, `getPhenotypes` and `predictCross` that can be set to three possible values: `'phase'`, `'origin'` and `'none'`.  
+
+The default setting for all three functions is `equivalent = 'phase'`. This means that all genotypes that at any locus differ only in the order (i.e., origin) of alleles will be treated as equivalent. To understand this, let us consider a very artificial example with two linked loci coding for the colour of an individual:
+```{r}
+mySystem <- newGenopheno(nloci = 2, rec = 0.01)
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ bb', 'white', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ bb', 'yellow', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ bb', 'orange', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ Bb', 'red', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ Bb', 'purple', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ Bb', 'blue', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ BB', 'green', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aA ~ BB', 'brown', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ BB', 'black', equivalent = 'phase')
+getPhenotypes(mySystem, equivalent = 'phase')
+```
+(The argument `equivalent = 'phase'` is only added for clarity - this is the default setting and thus not necessary.) There are nine different genotypes that need to be specified and are displayed. Genotypes such as *Aabb* and *aAbb* need not be defined separately and are also not shown separately because they are treated as equivalent. The same is true for the double heterozygotes: the four genotypes *AaBb*, *AabB*, *aABb* and *aAbB* are all treated as equivalent. Note however that with respect to *inheritance*, the genotypes *AaBb* and *AabB* are clearly not equivalent when the two loci are linked: in the first case, the gametes are likely to contain either  *A* and *B* or *a* and *b* alleles whereas in the latter case it is the opposite. Compare the phenotypic distributions of the following two crosses in the above example:
+
+```{r}
+predictCross(mySystem, 'aa ~ bb', 'Aa ~ Bb')
+```
+
+```{r}
+predictCross(mySystem, 'aa ~ bb', 'Aa ~ bB')
+```
+
+A second possible value for `equivalent` is `'origin'`. Here, the order of alleles is irrelevant in absolute terms, but genotypes that differ in the allelic positions relative to each other (their "phase") are distinguished. Using the same example as above but with this setting yields the following: 
+```{r}
+mySystem <- newGenopheno(nloci = 2, rec = 0.01)
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ bb', 'white', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ bb', 'yellow', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ bb', 'orange', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ Bb', 'red', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ Bb', 'purple', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ Bb', 'blue', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ BB', 'green', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aA ~ BB', 'brown', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ BB', 'black', equivalent = 'origin')
+getPhenotypes(mySystem, equivalent = 'origin')
+```
+We can see that now, one genotype has an undefined phenotype because *AaBb* and *AabB* are no longer treated as equivalent. Thus, we can define another trait value for the missing genotype:
+```{r}
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ bB', 'pink', equivalent = 'origin')
+getPhenotypes(mySystem, equivalent = 'origin')
+```
+Note that the genotypes *AaBb* and *aAbB* as well as *AabB* and *aABb* are still treated as equivalent and not shown separately. Also note that when there is only a single locus, `equivalent = 'phase'` and `equivalent = 'origin'` have exactly the same effect. A potential use of the `equivalent = origin` option is to deal with cis-regulatory effects. If locus **A** affects gene expression at locus **B** *in cis*, then *AaBb* and *AabB* individuals could indeed have different phenotypes.
+
+The final possible setting for the `equivalent` argument is `'none'`. Here, all genotypes are distinguished. Thus, for two biallelic loci there are 16 possible genotypes that could all have different phenotypes. This allows the greatest flexibility in assigning traits, allowing for parent-of-origin specific effects such as genomic imprinting to be incorporated into the model. Of course, this comes at the cost of having to define and read through a longer list of genotypes. Finishing the above example, if we define the same genetic system with the `'none'` option, this yields
+```{r}
+mySystem <- newGenopheno(nloci = 2, rec = 0.01)
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ bb', 'white', equivalent = 'none')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ bb', 'yellow', equivalent = 'none')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ bb', 'orange', equivalent = 'none')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ Bb', 'red', equivalent = 'none')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ Bb', 'purple', equivalent = 'none')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ Bb', 'blue', equivalent = 'none')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ BB', 'green', equivalent = 'none')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aA ~ BB', 'brown', equivalent = 'none')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ BB', 'black', equivalent = 'none')
+getPhenotypes(mySystem, equivalent = 'none')
+```
+Now, there are seven (=16-9) genotypes with undefined traits that we could assign different colours to.
+
+A final word of warning. There is nothing wrong with defining phenotypes with one `equivalent` setting and displaying the result with a more restrictive one - this will only have the effect of displaying more genotypes. For example,
+```{r}
+mySystem <- newGenopheno(nloci = 2, rec = 0.01)
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ bb', 'white', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ bb', 'yellow', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ bb', 'orange', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ Bb', 'red', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ Bb', 'purple', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ Bb', 'blue', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ BB', 'green', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aA ~ BB', 'brown', equivalent = 'phase')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ BB', 'black', equivalent = 'phase')
+getPhenotypes(mySystem, equivalent = 'origin')
+```
+defines traits with the most encompassing `equivalent` setting where nine genotypes are distinguished but then displays ten different genotypes. However, the opposite is problematic and results in a warning message:
+```{r}
+mySystem <- newGenopheno(nloci = 2, rec = 0.01)
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ bb', 'white', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ bb', 'yellow', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ bb', 'orange', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ Bb', 'red', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ Bb', 'purple', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'Aa ~ bB', 'pink', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ Bb', 'blue', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aa ~ BB', 'green', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'aA ~ BB', 'brown', equivalent = 'origin')
+mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ BB', 'black', equivalent = 'origin')
+getPhenotypes(mySystem, equivalent = 'phase')
+```
+The warning is issued because a genotype that was defined with a separate trait (*AabB*, pink) is now not displayed since the 'phase' setting makes this genotype equivalent to the *AaBb* genotype.
