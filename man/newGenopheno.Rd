@@ -14,9 +14,11 @@ newGenopheno(nloci = 1, nalleles = rep(2, nloci),
 By default, all loci are set to be biallelic.}
 
 \item{alleleNames}{The names for the alleles at the different loci.
-The default value is 'standard', which automatically produces allele names 'a' and 'A' for the first locus, 'b' and 'B' for the second locus etc.
+The default value is 'standard', which for biallelic loci produces allele names 'a' and 'A' for the first locus, 'b' and 'B' for the second locus etc.
+If one locus has more than two alleles, 'standard' produces allele names a0, a1, a2; b0, b1, b2 etc.
 For other allele names, \code{alleleNames} should be a list of nloci elements, each of which needs to be a vector containing the allele names.
-Allele names need to be strings (class \code{character}) and can contain letters, numbers, or symbols (except '~', '.' and '|').}
+Allele names need to be strings (class \code{character}) and can contain letters, numbers,
+or symbols (except '~', '.' and '|').}
 
 \item{rec}{A vector of length \code{nloci-1} specifying recombination rates between the loci.}
 

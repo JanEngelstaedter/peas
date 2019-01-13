@@ -24,16 +24,18 @@
 #'
 print.genopheno <- function(x, ...) {
   nLGs <- length(x$geno) # number of linkage groups
-  if (nLGs == 1)
+  if (nLGs == 1) {
     cat("Genetic system comprising one linkage group:\n")
-  else
+  } else {
     cat("Genetic system comprising ",nLGs, " linkage groups:\n", sep="")
+  }
+
   for(i in 1:nLGs) {
-    if (x$geno[[i]]$nloci == 1)
+    if (x$geno[[i]]$nloci == 1) {
       cat("  Linkage group ",i,": ",x$geno[[i]]$type, ", ", x$geno[[i]]$nloci, " locus\n", sep="")
-    else if (x$geno[[i]]$nloci == 2)
+    } else if (x$geno[[i]]$nloci == 2) {
       cat("  Linkage group ",i,": ",x$geno[[i]]$type, ", ", x$geno[[i]]$nloci, " loci with recombination rate ", x$geno[[i]]$rec,"\n", sep="")
-    else if (x$geno[[i]]$nloci > 2) {
+    } else if (x$geno[[i]]$nloci > 2) {
       cat("  Linkage group ",i,": ",x$geno[[i]]$type, ", ", x$geno[[i]]$nloci, " loci with recombination rates (", sep="")
       cat(x$geno[[i]]$rec, sep=", ")
       cat(")\n")
@@ -41,9 +43,15 @@ print.genopheno <- function(x, ...) {
 
     for(j in 1:x$geno[[i]]$nloci) {
       cat("    Alleles at locus ",j,": ", sep="")
-      for(k in 1:(x$geno[[i]]$nalleles[j] -1 ))
-        cat(x$geno[[i]]$alleleNames[[j]][k],", ",sep="")
-      cat(x$geno[[i]]$alleleNames[[j]][x$geno[[i]]$nalleles[j]],"\n",sep="")
+      if (x$geno[[i]]$type %in% c('autosomal', 'maternal', 'paternal')) {
+        for(k in 1:(x$geno[[i]]$nalleles[j] -1 ))
+          cat(x$geno[[i]]$alleleNames[[j]][k],", ",sep="")
+        cat(x$geno[[i]]$alleleNames[[j]][x$geno[[i]]$nalleles[j]],"\n",sep="")
+      } else if (x$geno[[i]]$type %in% c('X-linked', 'Z-linked', 'Y-linked', 'W-linked')) {
+        for(k in 1:(x$geno[[i]]$nalleles[j] -1 ))
+          cat(x$geno[[i]]$alleleNames[[j]][k + 1],", ",sep="")
+        cat(x$geno[[i]]$alleleNames[[j]][x$geno[[i]]$nalleles[j] + 1],"\n",sep="")
+      }
     }
   }
 
@@ -81,7 +89,7 @@ print.genopheno <- function(x, ...) {
 #' MendelsPeas <- setPhenotypes(MendelsPeas, 'colour', 'yy', 'green')
 #' getPhenotypes(MendelsPeas)
 #'
-getPhenotypes <- function(genopheno, equivalent = "phase") {
+getPhenotypes <- function(genopheno, equivalent = "phase", hideNoncanonical = TRUE) {
   if (is.null(genopheno$pheno)) {
     print("No phenotypes specified yet.")
   } else {
@@ -92,7 +100,13 @@ getPhenotypes <- function(genopheno, equivalent = "phase") {
       toShow <- rep(TRUE, nrow(genopheno$pheno))
       names(toShow) <- rownames(genopheno$pheno)
       for(i in 1:nrow(genopheno$pheno)) {
+        # suppressing non-canonical genotypes in case of X- or Z-linked inheritance:
+        if (hideNoncanonical & (isNoncanonical(convertGenoStringToList(rownames(genopheno$pheno)[i], genopheno), genopheno)))
+          toShow[i] <- FALSE
+      }
+      for(i in 1:nrow(genopheno$pheno)) {
         if (toShow[i]) {
+          # suppressing equivalent genotypes:
           equisList <- getEquivalents(convertGenoStringToList(rownames(genopheno$pheno)[i], genopheno),
                                       genopheno, equivalent = equivalent) # list of genotypes that are equivalent to gt #i
           equisString <- sapply(equisList, convertGenoListToString, genopheno = genopheno) # same in string format

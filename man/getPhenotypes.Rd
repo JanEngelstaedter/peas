@@ -4,7 +4,7 @@
 \alias{getPhenotypes}
 \title{Retrieve information about the phenotypes of the genetic system}
 \usage{
-getPhenotypes(genopheno, equivalent = "phase")
+getPhenotypes(genopheno, equivalent = "phase", hideNoncanonical = TRUE)
 }
 \arguments{
 \item{genopheno}{A genopheno object containing all information about a genetic system.}

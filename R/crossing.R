@@ -14,21 +14,21 @@
 # fractions of these configurations.
 # Given an actual genotype, each configuration can then be used to generate the actual egg haplotype.
 #
-# @param genopheno A genopheno object containing all information about the genetic setup.
+# @param genopheno a genopheno object containing all information about the genetic setup.
+# @param noRec vector of boolean values specifying for which linkage groups recombination will be suppressed.
+#       Defaults to \code{NULL} in which case all linkage groups recombine normally.
 #
 # @return A data frame whose first columns represent all loci.
-# For each locus, a number 1 represents the maternal allele, 2 represents the paternal allele,
-# and 0 represents no allele. The last column contains the expected fraction of each configuration.
+# For each locus, a number 1 represents the maternal allele, 2 represents the paternal allele.
+# The last column contains the expected fraction of each configuration.
 #
-getEggConfigurations <- function(genopheno) {
+getEggConfigurations <- function(genopheno, noRec = NULL) {
   # generating table of possible configurations:
   poss <- list()  # list of possibilities for each locus
   for(lg in 1:length(genopheno$geno)) {
-    if (genopheno$geno[[lg]]$type %in% c('autosomal', 'XY')) {
+    if (genopheno$geno[[lg]]$type %in% c('autosomal', 'X-linked', 'Z-linked', 'Y-linked', 'W-linked')) {
       poss <- c(poss, rep(list(c(1,2)), genopheno$geno[[lg]]$nloci))
-    } else if (genopheno$geno[[lg]]$type == 'ZW') {
-      poss <- c(poss, rep(list(c(1,0)), genopheno$geno[[lg]]$nloci))
-    } else if (genopheno$geno[[lg]]$type == 'maternal') {
+    } else if (genopheno$geno[[lg]]$type %in% c('maternal', 'paternal')) {
       poss <- c(poss, rep(list(c(1)), genopheno$geno[[lg]]$nloci))
     }
   }
@@ -48,22 +48,29 @@ getEggConfigurations <- function(genopheno) {
     frac <- 1 # fraction to be calculated
     ri <- 0  # current row index
     for(lg in 1:length(genopheno$geno)) {
-      if (genopheno$geno[[lg]]$type %in% c('autosomal', 'XY', 'ZW')) {
+      if (genopheno$geno[[lg]]$type %in% c('autosomal', 'X-linked', 'Z-linked', 'Y-linked', 'W-linked')) {
+        if ((is.null(noRec)) | (!noRec[lg])) {
+          rec <- genopheno$geno[[lg]]$rec
+        } else {
+          rec <- rep(0, genopheno$geno[[lg]]$nloci -1)  # suppressing recombination
+        }
         for(j in 1:genopheno$geno[[lg]]$nloci) {
           ri <- ri + 1
           if (j == 1) {
             frac <- frac * 0.5
           } else {
             if (conf[i, ri] != conf[i, ri - 1])
-              frac <- frac * genopheno$geno[[lg]]$rec[j - 1]
-            else frac <- frac * (1 - genopheno$geno[[lg]]$rec[j - 1])
+              frac <- frac * rec[j - 1]
+            else frac <- frac * (1 - rec[j - 1])
           }
         }
+      } else if (genopheno$geno[[lg]]$type %in% c('maternal', 'paternal')) {
+        # do nothing
       }
     }
     conf$fraction[i] <- frac
   }
-  return(conf)
+  return(conf[conf$fraction > 0,])
 }
 
 # Generates a table of all possible sperm configurations
@@ -74,21 +81,21 @@ getEggConfigurations <- function(genopheno) {
 # Given an actual genotype, each configuration can then be used to generate the actual sperm haplotype.
 #
 # @param genopheno A genopheno object containing all information about the genetic setup.
+# @param noRec vector of boolean values specifying for which linkage groups recombination will be suppressed.
+#       Defaults to \code{NULL} in which case all linkage groups recombine normally.
 #
 # @return A data frame whose first columns represent all loci.
 # For each locus, a number 1 represents the maternal allele, 2 represents the paternal allele,
 # and 0 represents no allele. The last column contains the expected fraction of each configuration.
 #
-getSpermConfigurations <- function(genopheno) {
+getSpermConfigurations <- function(genopheno, noRec = NULL) {
   # generating table of possible configurations:
   poss <- list()  # list of possibilities for each locus
   for(lg in 1:length(genopheno$geno)) {
-    if (genopheno$geno[[lg]]$type %in% c('autosomal', 'ZW')) {
+    if (genopheno$geno[[lg]]$type %in% c('autosomal', 'X-linked', 'Z-linked', 'Y-linked', 'W-linked')) {
       poss <- c(poss, rep(list(c(1,2)), genopheno$geno[[lg]]$nloci))
-    } else if (genopheno$geno[[lg]]$type == 'XY') {
-      poss <- c(poss, rep(list(c(1,0)), genopheno$geno[[lg]]$nloci))
-    } else if (genopheno$geno[[lg]]$type == 'maternal') {
-      poss <- c(poss, rep(list(c(0)), genopheno$geno[[lg]]$nloci))
+    } else if (genopheno$geno[[lg]]$type %in% c('maternal', 'paternal')) {
+      poss <- c(poss, rep(list(c(1)), genopheno$geno[[lg]]$nloci))
     }
   }
   conf <- expand.grid(poss)
@@ -107,22 +114,29 @@ getSpermConfigurations <- function(genopheno) {
     frac <- 1 # fraction to be calculated
     ri <- 0  # current row index
     for(lg in 1:length(genopheno$geno)) {
-      if (genopheno$geno[[lg]]$type %in% c('autosomal', 'XY', 'ZW')) {
+      if (genopheno$geno[[lg]]$type %in% c('autosomal', 'X-linked', 'Z-linked', 'Y-linked', 'W-linked')) {
+        if ((is.null(noRec)) | (!noRec[lg])) {
+          rec <- genopheno$geno[[lg]]$rec
+        } else {
+          rec <- rep(0, genopheno$geno[[lg]]$nloci -1)  # suppressing recombination
+        }
         for(j in 1:genopheno$geno[[lg]]$nloci) {
           ri <- ri + 1
           if (j == 1) {
             frac <- frac * 0.5
           } else {
             if (conf[i, ri] != conf[i, ri - 1])
-              frac <- frac * genopheno$geno[[lg]]$rec[j - 1]
-            else frac <- frac * (1 - genopheno$geno[[lg]]$rec[j - 1])
+              frac <- frac * rec[j - 1]
+            else frac <- frac * (1 - rec[j - 1])
           }
         }
+      } else if (genopheno$geno[[lg]]$type %in% c('maternal', 'paternal')) {
+        # do nothing
       }
     }
     conf$fraction[i] <- frac
   }
-  return(conf)
+  return(conf[conf$fraction > 0,])
 }
 
 
@@ -167,8 +181,75 @@ predictCross <- function(genopheno, mom, dad, equivalent = "phase", output = "bo
 
   momL <- convertGenoStringToList(mom, genopheno)  # maternal genotype in list format
   dadL <- convertGenoStringToList(dad, genopheno)  # paternal genotype in list format
-  eggs <- getEggConfigurations(genopheno)
-  sperm <- getSpermConfigurations(genopheno)
+
+  noRec <- rep(FALSE, length(genopheno$geno))
+  for(lg in 1:length(noRec)) {
+    if (genopheno$geno[[lg]]$type == 'X-linked')
+      if ((momL[[lg]][[1]][1] == 0) | (momL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+        warning(paste0("Maternal genotype is not diploid at X-linked linkage group ",lg,"."))
+      }
+    if (genopheno$geno[[lg]]$type == 'Z-linked')
+      if ((momL[[lg]][[1]][1] == 0) | (momL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+      } else {
+        warning(paste0("Maternal genotype is diploid at Z-linked linkage group ",lg,"."))
+      }
+    if (genopheno$geno[[lg]]$type == 'Y-linked')
+      if ((momL[[lg]][[1]][1] == 0) & (momL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+      } else if ((momL[[lg]][[1]][1] == 0) | (momL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+        warning(paste0("Maternal genotype contains Y-linked allele(s) on ",lg,"."))
+      } else {
+        warning(paste0("Maternal genotype is diploid at Y-linked linkage group ",lg,"."))
+      }
+    if (genopheno$geno[[lg]]$type == 'W-linked')
+      if (xor(momL[[lg]][[1]][1] == 0, momL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+      } else if ((momL[[lg]][[1]][1] == 0) & (momL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+        warning(paste0("Maternal genotype contains no allele(s) on W-linked linkage group ",lg,"."))
+      } else {
+        warning(paste0("Maternal genotype is diploid at W-linked linkage group ",lg,"."))
+      }
+  }
+  eggs <- getEggConfigurations(genopheno, noRec)
+
+  noRec <- rep(FALSE, length(genopheno$geno))
+  for(lg in 1:length(noRec)) {
+    if (genopheno$geno[[lg]]$type == 'X-linked')
+      if ((dadL[[lg]][[1]][1] == 0) | (dadL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+      } else {
+        warning(paste0("Paternal genotype is diploid at X-linked linkage group ",lg,"."))
+      }
+    if (genopheno$geno[[lg]]$type == 'Z-linked')
+      if ((dadL[[lg]][[1]][1] == 0) | (dadL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+        warning(paste0("Paternal genotype is not diploid at Z-linked linkage group ",lg,"."))
+      }
+    if (genopheno$geno[[lg]]$type == 'Y-linked')
+      if (xor(dadL[[lg]][[1]][1] == 0, dadL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+      } else if ((dadL[[lg]][[1]][1] == 0) & (dadL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+        warning(paste0("Paternal genotype contains no allele(s) on Y-linked linkage group ",lg,"."))
+      } else {
+        warning(paste0("Paternal genotype is diploid at Y-linked linkage group ",lg,"."))
+      }
+    if (genopheno$geno[[lg]]$type == 'W-linked')
+      if ((dadL[[lg]][[1]][1] == 0) & (dadL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+      } else if ((dadL[[lg]][[1]][1] == 0) | (dadL[[lg]][[1]][2] == 0)) {
+        noRec[lg] <- TRUE
+        warning(paste0("Paternal genotype contains W-linked allele(s) on ",lg,"."))
+      } else {
+        warning(paste0("Paternal genotype is diploid at W-linked linkage group ",lg,"."))
+      }
+  }
+  sperm <- getSpermConfigurations(genopheno, noRec)
+
   noffspring <- nrow(eggs)*nrow(sperm)   # "raw" number of offspring genotypes
   if (is.null(genopheno$pheno)) { # no phenotypes defined
     offspring <- data.frame(matrix(NA, ncol=2, nrow=noffspring))
@@ -191,7 +272,12 @@ predictCross <- function(genopheno, mom, dad, equivalent = "phase", output = "bo
       for(lg in 1:length(genopheno$geno)) {  # linkage group in offspring genotype
         for(i in 1:genopheno$geno[[lg]]$nloci) {  # locus within linkage group in offspring genotype
           j <- j + 1
-          offspringGTs[[io]][[lg]][[i]] <- c(momL[[lg]][[i]][eggs[ie,j]], dadL[[lg]][[i]][sperm[is,j]])
+          if (genopheno$geno[[lg]]$type %in% c('autosomal', 'X-linked', 'Z-linked', 'Y-linked', 'W-linked'))
+            offspringGTs[[io]][[lg]][[i]] <- c(momL[[lg]][[i]][eggs[ie,j]], dadL[[lg]][[i]][sperm[is,j]])
+          else if (genopheno$geno[[lg]]$type == 'maternal')
+            offspringGTs[[io]][[lg]][[i]] <- momL[[lg]][[i]][eggs[ie,j]]
+          else if (genopheno$geno[[lg]]$type == 'paternal')
+            offspringGTs[[io]][[lg]][[i]] <- dadL[[lg]][[i]][sperm[is,j]]
         }
       }
     }

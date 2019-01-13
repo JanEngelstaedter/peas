@@ -15,9 +15,11 @@
 #' @param nalleles The number of alleles for each locus. This should be a vector of length \code{nloci} containing positive integer numbers.
 #' By default, all loci are set to be biallelic.
 #' @param alleleNames The names for the alleles at the different loci.
-#' The default value is 'standard', which automatically produces allele names 'a' and 'A' for the first locus, 'b' and 'B' for the second locus etc.
+#' The default value is 'standard', which for biallelic loci produces allele names 'a' and 'A' for the first locus, 'b' and 'B' for the second locus etc.
+#' If one locus has more than two alleles, 'standard' produces allele names a0, a1, a2; b0, b1, b2 etc.
 #' For other allele names, \code{alleleNames} should be a list of nloci elements, each of which needs to be a vector containing the allele names.
-#' Allele names need to be strings (class \code{character}) and can contain letters, numbers, or symbols (except '~', '.' and '|').
+#' Allele names need to be strings (class \code{character}) and can contain letters, numbers,
+#' or symbols (except '~', '.' and '|').
 #' @param rec A vector of length \code{nloci-1} specifying recombination rates between the loci.
 #' @param type This parameter specifies the ploidy and inheritance for the loci.
 #' The default value is "autosomal" and currently, this is also the only supported type
@@ -42,7 +44,7 @@ newGenopheno <- function(nloci = 1, nalleles = rep(2, nloci), alleleNames = 'sta
   gp <- list(geno = list(), pheno = NULL)
   class(gp) <- "genopheno"
   gp <- addLinkageGroup(gp, nloci, nalleles, alleleNames, rec, type)
-  gp
+  return(gp)
 }
 
 
@@ -58,9 +60,17 @@ newGenopheno <- function(nloci = 1, nalleles = rep(2, nloci), alleleNames = 'sta
 addLinkageGroup <- function(genopheno, nloci = 1, nalleles = rep(2, nloci), alleleNames = 'standard', rec = NULL, type = 'autosomal') {
   checkGenophenoArguments(nloci, nalleles, alleleNames, rec, type)
   if (!is.null(genopheno[["pheno"]]))
-    stop("New linkage groups can only be added before phenotypes are specified.")
+    stop("New linkage groups can only be added before phenotypes are specified.", call. = FALSE)
   nLGs <- length(genopheno[["geno"]])
   if (alleleNames[1]=='standard') alleleNames <- getStandardAlleleNames(nloci, nalleles)
+  if (type %in% c('X-linked', 'Z-linked', 'Y-linked', 'W-linked')) {
+    # check if there is already a sex chromosome linkage group:
+    if ((nLGs > 0) & (length(intersect(sapply(genopheno$geno, with, type), c('X-linked', 'Z-linked', 'Y-linked', 'W-linked'))) > 0))
+      stop("Only one sex chromosome linkage group can be defined.", call. = FALSE)
+
+    for(i in 1:nloci)
+      alleleNames[[i]] <- c(strrep(".", nchar(alleleNames[[i]][1])), alleleNames[[i]])
+  }
   genopheno[["geno"]][[nLGs + 1]] <- list(nloci = as.integer(nloci),
                                           nalleles = as.integer(nalleles),
                                           alleleNames = alleleNames,
@@ -74,27 +84,29 @@ addLinkageGroup <- function(genopheno, nloci = 1, nalleles = rep(2, nloci), alle
 # newGenopheno and addLinkageGroup are valid.
 checkGenophenoArguments <- function(nloci, nalleles, alleleNames, rec, type) {
   if ((!is.numeric(nloci)) | (length(nloci)>1) | (nloci < 1))
-    stop("Number of loci must be a positive integer number.")
+    stop("Number of loci must be a positive integer number.", call. = FALSE)
   if (length(nalleles) != nloci)
-    stop(paste0("Vector of length nloci=",nloci," expected for argument 'nalleles'."))
+    stop(paste0("Vector of length nloci=",nloci," expected for argument 'nalleles'."), call. = FALSE)
   if (alleleNames[1] != 'standard') {
     if ((!is.list(alleleNames)) | (length(alleleNames)!=nloci))
-      stop(paste0("List of length nloci=", nloci, " expected for argument 'alleleNames'."))
+      stop(paste0("List of length nloci=", nloci, " expected for argument 'alleleNames'."), call. = FALSE)
     if (!identical(sapply(alleleNames, length), as.integer(nalleles)))
-      stop("Number of alleles does not correspond to allele names.")
+      stop("Number of alleles does not correspond to allele names.", call. = FALSE)
     if (any(sapply(alleleNames, function(x) { length(unique(nchar(x)))>1 })))
-      stop("Allele names need to have the same number of characters for each locus.")
+      stop("Allele names need to have the same number of characters for each locus.", call. = FALSE)
     if (any(sapply(alleleNames, function(x) { any(unique(x) != x) })))
-      stop("For each locus allele names need to be all different.")
+      stop("For each locus allele names need to be all different.", call. = FALSE)
     if (any(sapply(alleleNames, function(x) { any(sapply(c('_','~','\\|','\\.',' '), grepl, x = x)) })))
-      stop("Invalid character in one of the allele names.")
+      stop("Invalid character in one of the allele names.", call. = FALSE)
   }
   if ((nloci == 1) & (!is.null(rec)))
-    stop("No recombination rates can be set when there is only one locus.")
-  if (length(rec) != (nloci-1))
-    stop(paste("Vector of lenght",nloci-1,"expected for argument 'rec'."))
-  if (!(type %in% c('autosomal')))
-    stop("Inheritance specified by 'type' not supported.")
+    stop("No recombination rates can be set when there is only one locus.", call. = FALSE)
+  if ((type %in% c('maternal', 'paternal')) & (!is.null(rec)))
+    stop("No recombination rates can be set for uniparentally inherited linkage groups.", call. = FALSE)
+  if ((type %in% c('autosomal', 'X-linked', 'Z-linked', 'Y-linked', 'W-linked')) & (!is.null(rec)) & (length(rec) != (nloci-1)))
+    stop(paste("Vector of lenght",nloci-1,"expected for argument 'rec'."), call. = FALSE)
+  if (!(type %in% c('autosomal', 'X-linked', 'Z-linked', 'Y-linked', 'W-linked', 'maternal', 'paternal')))
+    stop("Inheritance specified by 'type' not supported.", call. = FALSE)
 }
 
 
@@ -109,11 +121,11 @@ getStandardAlleleNames <- function(nloci, nalleles) {
   alleleNames<-vector("list", nloci)
   if (max(nalleles)==2) {
     for (locus in 1:nloci) alleleNames[[locus]]<-c(letters[locus],LETTERS[locus])
-  } else if (max(nalleles)>2 & max(nalleles)<10) {
-    for (locus in 1:nloci) alleleNames[[locus]]<-paste0(letters[locus],0:nalleles[locus])
+  } else if (max(nalleles)>2 & max(nalleles)<=10) {
+    for (locus in 1:nloci) alleleNames[[locus]]<-paste0(letters[locus],0:(nalleles[locus] -1))
   }
   else stop("Standard allele names not available when there are more than ten alleles at a locus.")
-  alleleNames
+  return(alleleNames)
 }
 
 
@@ -142,7 +154,7 @@ setPhenotypes <- function(genopheno, traitName, genotypes, traitValue, equivalen
   genotypes <- tidyGenoString(genotypes)
   if (is.null(genopheno$pheno)) {   # first time phenotypes are specified
     allGenoStrings <- getAllGenoStrings(genopheno)
-    genopheno$pheno <- data.frame(rep(NA, length(allGenoStrings)), row.names = getAllGenoStrings(genopheno))
+    genopheno$pheno <- data.frame(rep(NA, length(allGenoStrings)), row.names = allGenoStrings)
     colnames(genopheno$pheno)[1] <- traitName
   } else {  # some phenotypes have already been specified
     if (!(traitName %in% colnames(genopheno$pheno)))  # new trait
@@ -171,3 +183,93 @@ setPhenotypes <- function(genopheno, traitName, genotypes, traitValue, equivalen
   return(genopheno)
 }
 
+
+#' Add sex phenotypes to a genetic system with sex chromosomes
+#'
+#' This function add a trait 'sex' to an existing genopheno object.
+#' Trait values ('female' and 'male') are assigned automatically to all genotypes
+#' according to sex chromosome configurations.
+#'
+#' @param genopheno genopheno object specifying the genetic setup.
+#'
+#' @return genopheno object with sex trait information added.
+#' @export
+#'
+#' @examples
+#' mySystem <- newGenopheno(type = "X-linked")
+#' mySystem <- setSexPhenotypes(mySystem)
+#' getPhenotypes(mySystem)
+#'
+setSexPhenotypes <- function(genopheno) {
+  # identify sex chromosomes:
+  sexCSystem <- intersect(sapply(genopheno$geno, with, type), c('X-linked', 'Z-linked', 'Y-linked', 'W-linked'))
+  if (length(sexCSystem) == 0) # no sex chromosomes
+    stop("No sex chromosome linkage groups defined.")
+  if (length(sexCSystem) > 1) # more than one sex chromosome system
+    stop("Sex chromosome system ambiguous.")
+  maleGTs <- ""
+  femaleGTs <- ""
+  for(lg in 1:length(genopheno$geno)) {
+    if (lg > 1) {
+      maleGTs <- paste0(maleGTs, "|")
+      femaleGTs <- paste0(femaleGTs, "|")
+    }
+    if (genopheno$geno[[lg]]$type == 'autosomal')
+      for(i in 1:genopheno$geno[[lg]]$nloci) {
+        if (i>1) {
+          maleGTs <- paste0(maleGTs, "~")
+          femaleGTs <- paste0(femaleGTs, "~")
+        }
+        maleGTs <- paste0(maleGTs, paste0(rep("_", 2*nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+        femaleGTs <- paste0(femaleGTs, paste0(rep("_", 2*nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+      }
+    if (genopheno$geno[[lg]]$type == 'X-linked')
+      for(i in 1:genopheno$geno[[lg]]$nloci) {
+        if (i>1) {
+          maleGTs <- paste0(maleGTs, "~")
+          femaleGTs <- paste0(femaleGTs, "~")
+        }
+        maleGTs <- paste0(maleGTs, paste0(rep("_", nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+        maleGTs <- paste0(maleGTs, paste0(rep(".", nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+        femaleGTs <- paste0(femaleGTs, paste0(rep("_", 2*nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+      }
+    if (genopheno$geno[[lg]]$type == 'Z-linked')
+      for(i in 1:genopheno$geno[[lg]]$nloci) {
+        if (i>1) {
+          maleGTs <- paste0(maleGTs, "~")
+          femaleGTs <- paste0(femaleGTs, "~")
+        }
+        maleGTs <- paste0(maleGTs, paste0(rep("_", 2*nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+        femaleGTs <- paste0(femaleGTs, paste0(rep(".", nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+        femaleGTs <- paste0(femaleGTs, paste0(rep("_", nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+      }
+    if (genopheno$geno[[lg]]$type == 'Y-linked')
+      for(i in 1:genopheno$geno[[lg]]$nloci) {
+        if (i>1) {
+          maleGTs <- paste0(maleGTs, "~")
+          femaleGTs <- paste0(femaleGTs, "~")
+        }
+        maleGTs <- paste0(maleGTs, paste0(rep(".", nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+        maleGTs <- paste0(maleGTs, paste0(rep("_", nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+        femaleGTs <- paste0(femaleGTs, paste0(rep(".", 2*nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+      }
+    if (genopheno$geno[[lg]]$type == 'W-linked')
+      for(i in 1:genopheno$geno[[lg]]$nloci) {
+        if (i>1) {
+          maleGTs <- paste0(maleGTs, "~")
+          femaleGTs <- paste0(femaleGTs, "~")
+        }
+        maleGTs <- paste0(maleGTs, paste0(rep(".", 2*nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+        femaleGTs <- paste0(femaleGTs, paste0(rep("_", nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+        femaleGTs <- paste0(femaleGTs, paste0(rep(".", nchar(genopheno$geno[[lg]]$alleleNames[[i]][1])), collapse = ""))
+      }
+  }
+  if (sexCSystem %in% c('X-linked', 'W-linked')) {
+    genopheno <- setPhenotypes(genopheno, "sex", femaleGTs, "female")
+    genopheno <- setPhenotypes(genopheno, "sex", maleGTs, "male")
+  } else {
+    genopheno <- setPhenotypes(genopheno, "sex", maleGTs, "male")
+    genopheno <- setPhenotypes(genopheno, "sex", femaleGTs, "female")
+  }
+  return(genopheno)
+}

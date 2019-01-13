@@ -21,7 +21,7 @@ library(peas)
 
 The purpose of this R package is to predict offspring distributions in genetic crosses. This may help researchers and breeders in designing crossing schemes or in testing whether a hypothesised genetic system is in accord with observed offspring distributions in crosses. The package could also be used for teaching Mendelian genetics.
 
-The general workflow is straightforward. First, the genetic system is defined using the functions `newGenopheno` and `addLinkageGroup`. Second, phenotypes are added to the sysem using the `setPhenotypes` function. Finally, the function `predictCross` is used to predict the distribution of offspring genotypes and phenotypes in crosses. Below, these functions will be described in more detail, but it may be useful to first go through a simple example. Naturally, we will choose Mendel's peas.
+The general workflow is straightforward. First, the genetic system is defined using the functions `newGenopheno` and `addLinkageGroup`. Second, phenotypes are added to the system using the `setPhenotypes` function. Finally, the function `predictCross` is used to predict the distribution of offspring genotypes and phenotypes in crosses. Below, these functions will be described in more detail, but it may be useful to first go through a simple example. Naturally, we will choose Mendel's peas.
 
 We will consider a single locus with the dominant allele *Y*, coding for yellow pea colour, and the recessive allele *y*, coding for green peas. The following line of code defines the basic genetic setup for this system and stores it in an object that we call `MendelsPeas`:
 
@@ -60,7 +60,7 @@ As expected, all offspring are heterozygous and therefore, all offspring have ye
 predictCross(MendelsPeas, 'Yy', 'Yy')
 ```
 
-In the following section, more details will be provided on how to define genetic systems, assign traits and predict crosses. A final section will cover different settings for equivalencies between genotypes and how they can be used to incorporate parent-of-origin and cis-regulatory effects.
+In the following section, more details will be provided on how to define genetic systems, assign traits and predict crosses. This section should be sufficient reading for most users. In a more technical section we will cover different settings for equivalencies between genotypes and how they can be used to incorporate parent-of-origin and cis-regulatory effects. A final section deals shows how linkage groups with non-autosomal inheritance (uniparental or sex chromosomal inheritance) can be implemented.
 
 This package is under active development. Comments, feedback, bug reports or suggestions for new features would be greatly appreciated: simply send an email to j.engelstaedter@uq.edu.au. Thanks!
 
@@ -101,7 +101,7 @@ Allele names can be single characters or character strings of arbitrary length, 
 
 * If allele names are given, they must be given for all alleles and loci. In other words, the argument `alleleNames` must be a list of lenght `nloci` and each vector in that list must have the corresponding number of elements, `nalleles[i]`. If the user wants to give standard names to only some alleles or loci, this must be done manually.
 * All allele names at a particular locus must have the same length. Thus, trying to name two alleles 'wt' and 'R' would cause an error.
-* For reasons that will become clear in the following sections, the following characters are not allowed within allele names: "_" (underscore), "." (dot), "~" (tilde), "|" (vertical bar), and " " (space).
+* For reasons that will become clear in the following sections, the following characters are not allowed within allele names: '_' (underscore), '.' (dot), '~' (tilde), '|' (vertical bar), and ' ' (space).
 * Naturally, within each locus the allele names need to be different. It is possible to use the same allele names for different loci, but this is probably not advisable.
 
 So far, the genetic systems we have defined consisted of a single linkage group. We can add more linkage groups
@@ -122,13 +122,12 @@ mySystem
 ```
 This system is displayed differently from the one we defined previously but behaves in exactly the same way.
 One advantage of defining different linkage groups is that recombination rates need not be specified because 
-there is always free recombination between loci on different linkage groups. Future versions of this package will
-also allow for different linkage groups to follow different patterns of inheritance, but in the current version 
-all linkage groups are assumed to follow the canonical autosomal mode of inheritance.
+there is always free recombination between loci on different linkage groups. Another advantage is that different linkage groups 
+can follow different patterns of inheritance, as described in the last section of this vignette.
 
 ## Adding phenotypes
 
-Once the formal aspects of the genetic system have been defined, it is time to add phenotypic information. This is done using the `setPhenotypes` function, and in a way that is similar to adding new linkage groups. In the simplest case:
+Once the formal aspects of the genetic system have been defined, it is time to add phenotypic information. This is done using the `setPhenotypes` function in a way that is similar to adding new linkage groups. In the simplest case:
 ```{r}
 mySystem <- newGenopheno()
 mySystem <- setPhenotypes(mySystem, 'colour', c('AA', 'Aa'), 'black')
@@ -193,13 +192,13 @@ Note that the very first call of `setPhenotypes` assigns the (wrong) trait value
 
 We have defined our genetic system along with all the phenotypic information, so we would finally like to predict the outcome of some crosses in our system. This step is now very straightforward, using the function `predictCross`. This function takes three main arguments: the genetic system (our `genopheno` object), the maternal genotype, and the paternal genotype. The latter two genotypes are supplied again by strings following the same syntax rules as used for definined phenotypes, except that no wildcards are permitted. 
 
-We have already seen an example for Mendel's peas in the Introduction, so let us now continue with the blood type example as defined above and consider one possible mating between an 0/Rh+ mother and a B/Rh+ father:
+We have already seen an example for Mendel's peas in the Introduction, so let us now continue with the blood type example as defined above and consider one possible mating between an A/Rh+ mother and a B/Rh+ father:
 ```{r}
 offspring <- predictCross(mySystem, 'A0 | Rh+Rh-', 'BB | Rh+Rh-')
 offspring
 ```
 
-The output of the `predictCross` function is a list containing two dataframe objects. The first dataframe is a table of offspring genotypes, along with their predicted frequency among all offspring. The second dataframe is a table of showing all offspring phenotypes (combinations of trait values), again with their predicted frequencies. This second table is shorter than the first one because several genotypes can give rise to the same phenotype and are therefore collapsed into one row in the second table. (For example, the *AB | Rh+Rh+* and the *AB | Rh+Rh-* genotype both produce the 'AB Rh+' phenotype.) 
+The output of the `predictCross` function is a list containing two dataframe objects. The first dataframe is a table of offspring genotypes, along with their predicted frequency among all offspring. The second dataframe is a table showing all offspring phenotypes (combinations of trait values), again with their predicted frequencies. This second table is shorter than the first one because several genotypes can give rise to the same phenotype and are therefore collapsed into one row in the second table. (For example, the *AB | Rh+Rh+* and the *AB | Rh+Rh-* genotype both produce the 'AB +' phenotype.) 
 
 Calling `offspring$genotypes` or `offspring$phenotypes` allows one to extract the two dataframes individually. This may be useful for downstream applications, e.g. a chi-square test to see whether experimentally observed offspring distributions deviate significantly from the expected distribution. The function `predictCross` also has a parameter `output` specifying what should be returned. If one is only interested in the phenotype distribution, the function can be called as `predictCross(..., output = 'phenotypes')` and only the second, phenotype dataframe is returned. Alternative options for `output` are 'genotypes' (only the genotype distribution) or 'both' (the default setting).
 
@@ -300,3 +299,118 @@ mySystem <- setPhenotypes(mySystem, 'colour', 'AA ~ BB', 'black', equivalent = '
 getPhenotypes(mySystem, equivalent = 'phase')
 ```
 The warning is issued because a genotype that was defined with a separate trait (*AabB*, pink) is now not displayed since the 'phase' setting makes this genotype equivalent to the *AaBb* genotype.
+
+## Non-autosomal linkage groups
+
+In addition to regular, autosomal inheritance as described in all previous sections, the peas package can also handle genes on sex chromosomes or in uniparentally inherited organelles. We will first cover the simpler case of uniparental inheritance and then proceed to sex chromosome inheritance.
+
+Let us consider an artificial example in which a trait (colour) is determined by both an autosomal and a cytoplasmic, maternally inherited locus. We can define this system by first constructing the autosomal linkage group and then adding the maternally inherited one using the `type` argument:
+```{r}
+mySystem <- newGenopheno()
+mySystem <- addLinkageGroup(mySystem, type = 'maternal', alleleNames = list(c("b", "B")))
+```
+
+We can then define traits in the usual way except that the locus on the maternally inherited linkage group is haploid, so only a single allele is specified:
+```{r}
+mySystem <- setPhenotypes(mySystem, "colour", "__ | _", "white")
+mySystem <- setPhenotypes(mySystem, "colour", "A_ | _", "red")
+mySystem <- setPhenotypes(mySystem, "colour", "__ | B", "blue")
+```
+
+The first call sets the colour of all genotypes to 'white', the second sets all genotypes with at least one *A* allele at the autosomal locus to 'red' (overwriting some of the 'white' traits), and the final call sets all genotypes that have a *B* allele at the maternally inherited locus to 'blue'. Inpsecting the system shows that everything is set up as desired:
+```{r}
+mySystem
+getPhenotypes(mySystem)
+```
+
+Crosses between individuals can then be predicted in the same way as with purely autosomal systems, again specifying only a single allele for the maternally inherited locus. For example, the following cross between a red mother and a blue father is expected to yield 3/4 white and 1/3 red offspring individuals in our system:
+```{r}
+predictCross(mySystem, "Aa | b", "Aa | B")
+```
+
+Paternal inheritance can be implemented in the same way as maternal inheritance, using the `type = 'paternal'` argument setting.
+
+We now turn to sex chromsomal inheritance. We will first focus on X-linked inheritance as the most commonly encountered type of sex chromosome inheritance, and we will use red-green colourblindness as a classic example of X-linked recessive inheritance. We can define a genetic system with a linkage group that follows X-linked inheritance by again specifying the `type` argument:
+
+```{r}
+mySystem <- newGenopheno(alleleNames = list(c('A', 'a')), type = 'X-linked')
+```
+
+Here, alleles 'A' and 'a' indicate functional and nonfunctional versions of the OPN1LW gene producing an opsin pigment for long wavelength light. Inspecting this system shows that X-linked inheritance is now set for this linkage group:
+```{r}
+mySystem
+```
+
+Defining traits works in the same way as for autosomal linkage groups, with the lack of an allele in males indicated by a '.' (dot):
+```{r}
+mySystem <- setPhenotypes(mySystem, 'vision', c('AA', 'Aa', 'A.'), 'normal')
+mySystem <- setPhenotypes(mySystem, 'vision', c('aa', 'a.'), 'colourblind')
+getPhenotypes(mySystem)
+```
+An alternative way to define the genotypes (shorter but less clear) would have been to again use the underscore character as a placeholder:
+```{r}
+mySystem <- setPhenotypes(mySystem, 'vision', c('__'), 'colourblind')
+mySystem <- setPhenotypes(mySystem, 'vision', c('A_'), 'normal')
+getPhenotypes(mySystem)
+```
+For clarity, it may be useful to also define a trait indicating the sex of the different genotypes. This could be done again using the `setPhenotypes` function but a faster way is to use a special function called `setSexPhenotypes` that automatically assigns sex according to the sex chromsome configuration:
+```{r}
+mySystem <- setSexPhenotypes(mySystem)
+getPhenotypes(mySystem)
+```
+
+We can now predicting offspring proportions in a cross between a carrier mother and a father with normal vision:
+```{r}
+predictCross(mySystem, 'Aa', 'A.')
+```
+
+This reveals that although all daughters are expected to have normal vision, half of the sons are expected to be colourblind.
+
+Genetic systems with loci that are linked to Y, Z and W chromosomes (the latter two arising in female heterogametic species such as birds and butterflies) can be set up in essentially the same way as X-linked linkage groups. An artificial example of a system with a Y-linked locus is the following:
+```{r}
+mySystem <- newGenopheno(type = "Y-linked")
+mySystem <- setPhenotypes(mySystem, 'colour', '..', 'white')
+mySystem <- setPhenotypes(mySystem, 'colour', '.a', 'green')
+mySystem <- setPhenotypes(mySystem, 'colour', '.A', 'yellow')
+mySystem <- setSexPhenotypes(mySystem)
+getPhenotypes(mySystem)
+```
+
+Here, two dots indicate the complete absence of alleles as expected in females, and the `setSexPhenotypes` function again automatically adds a trait 'sex' with the expected values.
+
+A sex chromosomal linkage group can be combined with an arbitrary number of autosomal or uniparental linkage groups. However, it is not possible to define a genetic system with more than one sex chromosomal linkage group as this would require additional information on which linkage groups segregate together. Nevertheless, in some cases it will be possible to mimic several linkage groups of the same type by defining a single linkage group with free recombination between loci. For example, we could model a haplodiploid system (as in ants, bees and wasps) with two loci on two chromosomes as a single X-linked linkage group:
+```{r}
+mySystem <- newGenopheno(nloci = 2, rec = 0.5, type = 'X-linked')
+mySystem <- setSexPhenotypes(mySystem)
+mySystem
+getPhenotypes(mySystem)
+```
+
+We conclude this section with a few technical remarks that should not be essential for most user but may be of interest to users who want to model non-canonical sex chromosome systems. For illustration, we will use again an artificial example with a colour trait:
+```{r}
+mySystem <- newGenopheno(alleleNames = list(c('A', 'a')), type = 'X-linked')
+mySystem <- setPhenotypes(mySystem, 'colour', c('AA', 'Aa', 'A.'), 'white')
+mySystem <- setPhenotypes(mySystem, 'colour', c('aa', 'a.'), 'blue')
+mySystem <- setSexPhenotypes(mySystem)
+getPhenotypes(mySystem)
+```
+
+Here, we have added a trait called 'sex', but defining this trait is neither necessary for predicting crosses nor is it used to determine the validity of crosses. Thus, we could also cross an 'A.' individual (single X chromosome with an *A* allele) with an 'a.' individual (single X chromosome with an *a* allele), if for some reason the former is a female in spite of her sex chromosome constitution:
+```{r}
+predictCross(mySystem, 'A.', 'a.')
+```
+
+This produces a warning message because the maternal genotype does not conform to the expected allelic configuration for maternal genotypes but the cross is still predicted under the assumption that 'A.' is a female. This unusual cross produces individuals without any X chromosome, which are assumed to be male but for which we have defined no colour trait. We could define a colour for this genotype as well, and we could show traits of such unusual genotypes by setting the argument `hideNoncaninical` (defaulting to `TRUE`) to `FALSE`: 
+
+```{r}
+mySystem <- setPhenotypes(mySystem, 'colour', '..', 'green')
+getPhenotypes(mySystem, hideNoncanonical = FALSE)
+```
+
+In this case there is only a single non-canonical genotype but in other cases (with more linkage groups) there may be more that could arise in certain unusual crosses. As with autosomal linkage groups, there are also genotypes that are usually not displayed because they are considered phenotypically equivalent to the ones shown, and we can include them by setting the `equivalent` argument to `none`:
+```{r}
+mySystem <- setPhenotypes(mySystem, 'colour', '..', 'green')
+getPhenotypes(mySystem, equivalent = 'none', hideNoncanonical = FALSE)
+```
+
+Note that in contrast to equivalent genotypes with autosomal inheritance, some of the equivalent genotypes with sex chromosomal inheritance can never arise in regular crosses. For example, for the '.A' genotype to arise would require an allele contributed by the father but not by the mother, i.e. when the mother is hemizygous but still female.
