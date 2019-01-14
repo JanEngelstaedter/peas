@@ -71,12 +71,16 @@ print.genopheno <- function(x, ...) {
 
 #' Retrieve information about the phenotypes of the genetic system
 #'
-#' @param genopheno A genopheno object containing all information about a genetic system.
-#' @param equivalent Argument determining which genotypes are to be treated as equivalent.
+#' @param genopheno a genopheno object containing all information about a genetic system.
+#' @param equivalent argument determining which genotypes are to be treated as equivalent.
 #' Possible options are "phase" (genotypes that differ only by phase are equivalent,
 #' i.e. the order of alleles within a locus does not matter),
 #' "origin" (phase is important but not the origin of alleles),
 #' and "none" (no two genotypes are equivalent).
+#' @param hideNoncanonical if this argument is set to TRUE (the default value),
+#' genotypes involving sex chromomal linkage groups that normally cannot arise
+#' (e.g., complete lack of an allele at an X-linked locus) are not displayed.
+#' If this argument is set to FALSE, even these noncanonical genotypes will be displayed.
 #'
 #' @return A dataframe in which rows represent genotypes (given by row names),
 #'         and columns represent traits.

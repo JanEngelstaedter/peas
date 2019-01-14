@@ -3,7 +3,7 @@
 peas
 ====
 
-The purpose of this R package is to predict offspring distributions in genetic crosses. The package contains functions for defining systems of Mendelian inheritance (defined broadly), and making predictions about the distribution of offspring genotypes and phenotypes in genetic crosses. The package can handle multiple linkage groups with autosomal, sex-chromosomal or uniparental inheritance, with arbitrary numbers of loci and alleles per locus. Multiple traits can be freely defined, potentially involving pleiotropy, polygeny and epistasis.
+The purpose of this R package is to predict offspring distributions in genetic crosses. The package contains functions for defining systems of Mendelian inheritance (defined broadly), and caking predictions about the distribution of offspring genotypes and phenotypes in genetic crosses. The package can handle multiple linkage groups with autosomal, sex-chromosomal or uniparental inheritance, with arbitrary numbers of loci and alleles per locus. Multiple traits can be freely defined, potentially involving pleiotropy, polygeny and epistasis.
 
 Example
 -------
@@ -48,5 +48,5 @@ To install the peas package, you can run the following two lines of code in R:
 
 ``` r
 install.packages("devtools")
-devtools::install_github("JanEngelstaedter/peas", build_vignettes = TRUE)
+devtools::install_github("JanEngelstaedter/peas", build_opts = c("--no-resave-data", "--no-manual"))
 ```
