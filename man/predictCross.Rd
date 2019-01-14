@@ -4,7 +4,8 @@
 \alias{predictCross}
 \title{Predicts offspring distributions resulting from a cross between two genotypes.}
 \usage{
-predictCross(genopheno, mom, dad, equivalent = "phase", output = "both")
+predictCross(genopheno, mom, dad, equivalent = "phase",
+  output = "both")
 }
 \arguments{
 \item{genopheno}{genopheno object specifying the genetic setup.}
