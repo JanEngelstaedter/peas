@@ -39,5 +39,5 @@ To install the peas package, you can run the following two lines of code in R:
 
 ```{r installation, eval = FALSE}
 install.packages("devtools")
-devtools::install_github("JanEngelstaedter/peas", build_vignettes = TRUE)
+devtools::install_github("JanEngelstaedter/peas", build_opts = c("--no-resave-data", "--no-manual"))
 ```
